@@ -1,20 +1,13 @@
-// ╔══════════════════════════════════════════════════╗
-// ║ 🚀 Clexio Backend Server                          
-// ║ 🌐 Built with Express + Firebase + CSV Uploader  
-// ╚══════════════════════════════════════════════════╝
-
-// 🌐 Import needed packages
 const express = require('express');
 const bodyParser = require('body-parser');
 const admin = require('firebase-admin');
-const csv = require('csv-parser'); // To read CSV files
-const fs = require('fs');          // For reading files
-const path = require('path');      // For building file paths
-
+const csv = require('csv-parser'); 
+const fs = require('fs');         
+const path = require('path');
 const app = express();
+
 const port = 3000;
 
-// ✅ Initialize Firebase Admin SDK using the service account file
 const serviceAccount = require('./clexio-data-base-firebase-adminsdk-fbsvc-d30f311329.json');
 
 admin.initializeApp({
@@ -22,15 +15,35 @@ admin.initializeApp({
   projectId: 'clexio-data-base',
 });
 
-// ✅ Get Firestore database reference
 const db = admin.firestore();
 
-// ✅ Use JSON parser for requests
 app.use(bodyParser.json());
 
-// ✅ Default route (homepage)
+app.use('/test_front', express.static(path.join(__dirname, 'test_front')));
+
 app.get('/', (req, res) => {
-  res.send('🎉 Welcome to Clexio Backend! Backend is up and running!');
+  const filePath = path.join(__dirname, '/test_front/html/front.html');
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error("❌ Failed to send file:", err);
+      res.status(500).send("Error loading page");
+    }
+  });
+});
+
+app.get('/send_to_data_anayles', (req, res) => {
+  const filePath = path.join(__dirname, '/test_front/html/data_anayles.html');
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error("❌ Failed to send file:", err);
+      res.status(500).send("Error loading page");
+    }
+  });
+});
+
+app.get('/eli', (req, res) => {
+  console.log("Eliiiiiiiiiiiiii");
+  res.send('🎉 Eli is the King, and lea copy all from gpt');
 });
 
 // ✅ Route to upload materials from CSV to Firestore
@@ -71,7 +84,6 @@ app.post('/upload-csv', async (req, res) => {
   }
 });
 
-// ✅ Start the server on port 3000
 app.listen(port, () => {
   console.log(`🚀 Server listening at http://localhost:${port}`);
 });

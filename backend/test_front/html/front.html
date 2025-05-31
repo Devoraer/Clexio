@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="icon" href="/test_front/images/logo.ico">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Labaratory Dashboard</title>
+    <link rel="stylesheet" href="/test_front/css/front.css">
+</head>
+
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <h1>Smart Lab</h1>
+
+            <nav>
+                <div class="nav-item active" data-nav="send_to_data_anayles">
+                    <i data-lucide="send_to_data_anayles" class="nav-icon"></i>
+                    <span onclick="send_to_data_anayles()">Data Anayles</span>
+                </div>
+                <div class="nav-item" data-nav="analytics">
+                    <i data-lucide="bar-chart-3" class="nav-icon"></i>
+                    <span>ניתוח נתונים</span>
+                </div>
+                <div class="nav-item" data-nav="calendar">
+                    <i data-lucide="calendar" class="nav-icon"></i>
+                    <span>יומן עם שעות</span>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="header">
+                <h2>דשבורד מעבדה</h2>
+                <div class="header-info">
+                    <i data-lucide="bar-chart-3" class="header-icon"></i>
+                    <span>סקירה כללית</span>
+                </div>
+            </div>
+
+            <!-- Notifications Panel -->
+            <div class="notifications-panel">
+                <div class="notifications-header">
+                    <i data-lucide="alert-circle" class="notifications-icon"></i>
+                    <h3 class="notifications-title">התראות קרובות</h3>
+                </div>
+
+                <div class="notifications-grid">
+                    <div class="notification-item">
+                        <div class="notification-content">
+                            <i data-lucide="trash-2" class="notification-icon waste"></i>
+                            <div class="notification-text">
+                                <h4>פינוי פסולת מתוכנן</h4>
+                                <p>מעבדה ראשית</p>
+                            </div>
+                        </div>
+                        <div class="notification-time">
+                            <div class="time-item">
+                                <i data-lucide="calendar" class="time-icon"></i>
+                                <span>2025-06-02</span>
+                            </div>
+                            <div class="time-item">
+                                <i data-lucide="clock" class="time-icon"></i>
+                                <span>09:00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="notification-item">
+                        <div class="notification-content">
+                            <i data-lucide="settings" class="notification-icon calibration"></i>
+                            <div class="notification-text">
+                                <h4>כיול מכשיר נדרש</h4>
+                                <p>מיקרוסקופ דיגיטלי #001</p>
+                            </div>
+                        </div>
+                        <div class="notification-time">
+                            <div class="time-item">
+                                <i data-lucide="calendar" class="time-icon"></i>
+                                <span>2025-06-05</span>
+                            </div>
+                            <div class="time-item">
+                                <i data-lucide="clock" class="time-icon"></i>
+                                <span>14:30</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="notification-item">
+                        <div class="notification-content">
+                            <i data-lucide="alert-circle" class="notification-icon maintenance"></i>
+                            <div class="notification-text">
+                                <h4>תחזוקה מתוכננת</h4>
+                                <p>צנטריפוגה #003</p>
+                            </div>
+                        </div>
+                        <div class="notification-time">
+                            <div class="time-item">
+                                <i data-lucide="calendar" class="time-icon"></i>
+                                <span>2025-06-08</span>
+                            </div>
+                            <div class="time-item">
+                                <i data-lucide="clock" class="time-icon"></i>
+                                <span>11:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Cards Grid -->
+            <div class="cards-grid">
+                <!-- Equipment Card -->
+                <div class="card">
+                    <div class="card-icon equipment">
+                        <i data-lucide="settings" class="card-icon-svg"></i>
+                    </div>
+                    <h3>ציוד</h3>
+                    <p>ניהול ומעקב אחר כל הציוד והמכשירים במעבדה</p>
+                    <div class="card-stats">
+                        <div class="stat-item">
+                            <span class="stat-number equipment">8</span>
+                            <span>מכשירים סה"כ</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number equipment">6</span>
+                            <span>פעילים</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-equipment" onclick="handleButtonClick('ציוד')">
+                        כניסה לסעיף
+                    </button>
+                </div>
+
+                <!-- Samples Card -->
+                <div class="card">
+                    <div class="card-icon samples">
+                        <div
+                            style="width: 32px; height: 32px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <div style="width: 16px; height: 16px; background: #8b5cf6; border-radius: 50%;"></div>
+                        </div>
+                    </div>
+                    <h3>דגימות</h3>
+                    <p>מעקב אחר הדגימות ותהליכי הבדיקה שלהן</p>
+                    <div class="card-stats">
+                        <div class="stat-item">
+                            <span class="stat-number samples">12</span>
+                            <span>דגימות סה"כ</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number warning">3</span>
+                            <span>בבדיקה</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-samples" onclick="handleButtonClick('דגימות')">
+                        כניסה לסעיף
+                    </button>
+                </div>
+
+                <!-- Materials Card -->
+                <div class="card">
+                    <div class="card-icon materials">
+                        <svg class="card-icon-svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M9,2V8H11V22H13V8H15V2H9M12,4A1,1 0 0,1 13,5A1,1 0 0,1 12,6A1,1 0 0,1 11,5A1,1 0 0,1 12,4Z" />
+                        </svg>
+                    </div>
+                    <h3>חומרים</h3>
+                    <p>ניהול מלאי חומרי הגלם וחומצות המעבדה</p>
+                    <div class="card-stats">
+                        <div class="stat-item">
+                            <span class="stat-number materials">24</span>
+                            <span>חומרים סה"כ</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number error">2</span>
+                            <span>חסרים</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-materials" onclick="handleButtonClick('חומרים')">
+                        כניסה לסעיף
+                    </button>
+                </div>
+            </div>
+
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <h3>ברוכים הבאים למערכת ניהול המעבדה</h3>
+                <p>
+                    מערכת זו תאפשר לכם לנהל באופן יעיל את כל הציוד, הדגימות והחומרים במעבדה.
+                    השתמשו בפאנל ההתראות למעלה כדי לעקוב אחר משימות קרובות, ובחרו באחת מהאפשרויות למעלה כדי להתחיל.
+                </p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Navigation functionality
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function () {
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                this.classList.add('active');
+
+                const navType = this.getAttribute('data-nav');
+                console.log(`Navigated to: ${navType}`);
+            });
+        });
+
+        // Button click handlers
+        function handleButtonClick(section) {
+            alert(`נכנס לסעיף ${section}`);
+        }
+
+        // Add some interactivity to notifications
+        document.querySelectorAll('.notification-item').forEach(item => {
+            item.addEventListener('click', function () {
+                const title = this.querySelector('h4').textContent;
+                alert(`נלחץ על התראה: ${title}`);
+            });
+        });
+
+        function send_to_data_anayles() {
+            window.location.href = 'http://localhost:3000/send_to_data_anayles';    
+        }
+
+        console.log('מעבדת חכמה - דשבורד טעון בהצלחה');
+    </script>
+</body>
+
+</html>
