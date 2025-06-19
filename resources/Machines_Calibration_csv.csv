@@ -1,0 +1,30 @@
+ID,Department,Instrument ID,Instrument type,Location,Calibration interval,Calibrated by,Caibration Date
+1,Analytical,HPLC-CLX1,HPLC w/UV  Agilent 1100,Main Lab,12m,Dexcel,01/02/2024
+2,Analytical,HPLC-CLX2,HPLC w/UV  Agilent 1200,Main Lab,12m,Dexcel,01/05/2024
+3,Analytical,HPLC-CLX3,HPLC Agilent 1260,Main Lab,12m,Eldan,01/10/2024
+4,Analytical,DISS-CLX1,Dissolution ,Main Lab,12m,Dexcel,01/02/2024
+5,Analytical,DISS-CLX2,Dissolution ,Main Lab,12m,Dexcel,01/02/2024
+6,Analytical,UV-CLX1,Spectrophotometer,Main Lab,12m,Dexcel,01/02/2024
+7,Analytical,PH-CLX1,PH meter,Main Lab,12m,Scalar ,01/09/2024
+8,Analytical,BALANCE-CLX1,Balance,Main Lab,12m,Agentek,01/12/2024
+9, Pharma / Chemistry,"BALANCE-CLX 2,3,4,8",Balance,Main Lab,12m,Scalar ,01/11/2024
+10,Analytical,Moist-CLX2,Moisture analyzer,Main Lab,12m,Scalar ,01/11/2024
+11,Analytical / Chemistry,"HOOD-CLX1,2,3,4",Hoods,Main/chemistry lab,12m,PV Plast,01/03/2024
+12,Analytical,"THERMOMETER-CLX1, 2",Thermometers,Main Lab,12m,Scalar (externaly),01/06/2024
+13,Analytical,Micropipettors,specified in a different list,Main Lab,12m,Scalar (externaly),01/06/2024
+14,Analytical,"TIMER-CLX-1,2,3",Timers,Main Lab,12m,Scalar (externaly),01/06/2024
+15,Analytical,TACH-CLX2,Tachometer,Main Lab,12m,Scalar (externaly),01/06/2024
+16,Analytical,OSMO-CLX1,Osmometer,Main Lab,12m,Meteo-Tech,01/03/2024
+17,Pharma,CALIB-CLX1,Caliber,Main Lab,12m,Scalar ,01/11/2024
+18,Analytical,"REF-CLX1,2",Refrigerators,Main Lab,12m,Scalar ,01/11/2024
+19,Analytical,"HUMID-CLX1,2",Humidity sensors,Main Lab,12m,Scalar ,01/11/2024
+20,Analytical,SHAKER-CLX1,Shakers,Main Lab,12m,Scalar ,01/11/2024
+21,Analytical,"CEN-CLX1,2",Centrifuges,Main Lab,12m,Scalar ,01/11/2024
+22,Analytical,Water system-CLX1,Water purification system,Main Lab,12m,Mercury,01/02/2024
+23,General,DISHWASHER,Dishwasher,Main Lab,36m,Yagev,01/06/2025
+24,Pharma,OVEN-CLX6,Stability Chamber,Warehouse,12m,Scalar,01/01/2024
+25,Pharma,OVEN-CLX8,Stability Chamber,Warehouse,12m,Scalar,01/06/2024
+26,Pharma,"OVEN-CLX9, 10",Stability Chamber,Warehouse,12m,Scalar,01/05/2024
+27,Analytical,WEIGHT-SET-CLX1,"Standards weight set (10g, 200g)",Main Lab,36m,Scalar,01/07/2025
+28,Analytical,WEIGHT-SET-CLX2,"Standards weight set (10g, 200g)",Main Lab,36m,Scalar,01/04/2025
+29,Pharma,Weighing Hood-CLX1,Hood,Main Lab,12m,ADS Laminar,01/03/2024
