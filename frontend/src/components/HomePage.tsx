@@ -1,4 +1,4 @@
-// 🏠 src/pages/HomePage.tsx (redesigned with sidebar and English only)
+// src/pages/HomePage.tsx (redesigned with sidebar and English only)
 
 import {
   Box,

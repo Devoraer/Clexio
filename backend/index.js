@@ -1,33 +1,31 @@
-// ייבוא ספריות
+// 📦 ייבוא ספריות
 const express = require('express');
+const cors = require('cors'); // ✅ נוספה תמיכה ב־CORS
 const bodyParser = require('body-parser');
-const admin = require('firebase-admin');
 const csv = require('csv-parser');
 const fs = require('fs');
 const path = require('path');
+const { db } = require('./firebase');
+const materialsRouter = require('./materials');
 
 const app = express();
 const port = 3000;
 
-//  אתחול Firebase
-const serviceAccount = require('./clexio-data-base-firebase-adminsdk-fbsvc-c8ad3d3418.json');
+// ✅ תמיכה ב־CORS כדי ש־Frontend יוכל לדבר עם ה־Backend
+app.use(cors());
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  projectId: 'clexio-data-base',
-});
-
-const db = admin.firestore();
-
-//  Middleware
+// 🧠 Middleware
 app.use(bodyParser.json());
 
-// דוגמה ל־API פשוט לבדיקת תקשורת
+// 📁 router של חומרי גלם
+app.use("/api/materials", materialsRouter);
+
+// 🔄 בדיקת תקשורת פשוטה
 app.get('/api/ping', (req, res) => {
   res.send({ message: 'pong 🏓' });
 });
 
-//  שליחת קובץ CSV ל־Firestore
+// 📤 טעינת CSV לחומרי גלם
 app.post('/api/upload-csv', async (req, res) => {
   const collectionName = 'Materials';
   const csvFilePath = path.join(__dirname, 'Materials_csv.csv');
@@ -60,6 +58,7 @@ app.post('/api/upload-csv', async (req, res) => {
   }
 });
 
+// 🤖 שליפת מכונות
 app.get('/api/machines', async (req, res) => {
   try {
     console.log("📡 התקבלה בקשה ל־/api/machines");
@@ -70,21 +69,17 @@ app.get('/api/machines', async (req, res) => {
     console.log("✅ מספר מכונות שנשלפו:", machines.length);
     res.send(machines);
   } catch (error) {
-    console.error('❌ שגיאה אמיתית בשליפת מכונות:', error); // 🟢 זה מה שחשוב עכשיו!
+    console.error('❌ שגיאה אמיתית בשליפת מכונות:', error);
     res.status(500).send({ error: 'Failed to fetch machines' });
   }
 });
 
-
+// 🌐 דף הבית הפשוט
 app.get("/", (req, res) => {
-  res.send(" Clexio API is running!");
+  res.send("Clexio API is running!");
 });
 
-
-
-//  הרצת השרת
+// 🚀 הרצת השרת
 app.listen(port, () => {
-  console.log(` Server listening at http://localhost:${port}`);
+  console.log(`🚀 Server listening at http://localhost:${port}`);
 });
-
-
