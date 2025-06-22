@@ -1,4 +1,3 @@
-// ✅ MaterialsDashboard.tsx – כולל תיקון לקריאת quantity תקינה
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -20,6 +19,7 @@ import axios from "axios";
 interface Material {
   ID: string;
   name: string;
+  amount: number;
   quantity: number;
   expirationDate: string;
   classification: string;
@@ -37,7 +37,7 @@ const MaterialsDashboard = () => {
   const [search, setSearch] = useState("");
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [showDialog, setShowDialog] = useState(false);
-  const [updateQtys, setUpdateQtys] = useState<{ [id: string]: string }>({});
+  const [updateAmounts, setUpdateAmounts] = useState<{ [id: string]: string }>({});
   const [errors, setErrors] = useState<{ [id: string]: string }>({});
 
   useEffect(() => {
@@ -47,7 +47,8 @@ const MaterialsDashboard = () => {
         const mappedMaterials: Material[] = response.data.map((item: any) => ({
           ID: item.ID,
           name: item.Tradename || item.name || "Unknown",
-          quantity:(Number(item.Quantity)) ? Number(item.Quantity) : 0, // ✅ תיקון כאן
+          amount: Number(item.Amount) || 0,
+          quantity: Number(item.Quantity) || 0,
           expirationDate: item["Expiry Date"] || item.expirationDate || "Unknown",
           classification: item.No || item.classification || "Unknown",
           unit: item.Unit || "",
@@ -81,25 +82,32 @@ const MaterialsDashboard = () => {
     }
   };
 
-  const handleUpdateQty = async (id: string, currentQty: number) => {
-    const newQtyStr = updateQtys[id];
-    const newQty = parseFloat(newQtyStr);
-    if (isNaN(newQty) || newQty < 0) {
-      setErrors((prev) => ({ ...prev, [id]: "Enter a valid quantity" }));
+  const handleUpdateAmount = async (id: string, currentAmount: number) => {
+    const newAmountStr = updateAmounts[id];
+    const newAmount = parseFloat(newAmountStr);
+
+    if (isNaN(newAmount) || newAmount < 0) {
+      setErrors((prev) => ({ ...prev, [id]: "Enter a valid amount" }));
       return;
     }
 
+    console.log("📤 שולחת בקשת עדכון:", {
+      id,
+      amount: newAmount,
+    });
+
     try {
-      await axios.put(`http://localhost:3000/api/materials/${id}/quantity`, {
-        quantity: newQty,
+      await axios.put(`http://localhost:3000/api/materials/${id}/amount`, {
+        amount: newAmount,
       });
+
       setMaterials((prev) =>
-        prev.map((m) => (m.ID === id ? { ...m, quantity: newQty } : m))
+        prev.map((m) => (m.ID === id ? { ...m, amount: newAmount } : m))
       );
-      setUpdateQtys((prev) => ({ ...prev, [id]: "" }));
+      setUpdateAmounts((prev) => ({ ...prev, [id]: "" }));
       setErrors((prev) => ({ ...prev, [id]: "" }));
     } catch (err) {
-      console.error("Error updating quantity", err);
+      console.error("❌ שגיאה בעדכון:", err);
     }
   };
 
@@ -142,27 +150,25 @@ const MaterialsDashboard = () => {
                 borderRadius: 4,
                 boxShadow: 3,
                 p: 2,
-                backgroundColor: material.quantity === 0 ? "#eeeeee" : "white",
+                backgroundColor: material.amount === 0 ? "#eeeeee" : "white",
               }}
             >
               <CardContent>
                 <Chip label={expiry.status} color={expiry.color as any} sx={{ mb: 1 }} />
                 <Typography variant="h6" gutterBottom>{material.name}</Typography>
                 <Typography>ID: {material.ID}</Typography>
-                <Typography sx={{ fontWeight: 500 }}>
-                  Quantity: {material.quantity} {material.unit}
-                </Typography>
+                <Typography>Amount: {material.amount} {material.unit}</Typography>
+                <Typography>Quantity: {material.quantity} {material.unit}</Typography>
                 <Typography>Expiry Date: {material.expirationDate}</Typography>
 
-                {/* Update Field + Button */}
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
                   <TextField
-                    label="Qty"
+                    label="Amount"
                     type="number"
                     size="small"
-                    value={updateQtys[material.ID] || ""}
+                    value={updateAmounts[material.ID] || ""}
                     onChange={(e) =>
-                      setUpdateQtys((prev) => ({ ...prev, [material.ID]: e.target.value }))
+                      setUpdateAmounts((prev) => ({ ...prev, [material.ID]: e.target.value }))
                     }
                     error={!!errors[material.ID]}
                     helperText={errors[material.ID] || ""}
@@ -171,7 +177,7 @@ const MaterialsDashboard = () => {
                   <Button
                     size="small"
                     variant="outlined"
-                    onClick={() => handleUpdateQty(material.ID, material.quantity)}
+                    onClick={() => handleUpdateAmount(material.ID, material.amount)}
                   >
                     Update
                   </Button>
@@ -186,7 +192,7 @@ const MaterialsDashboard = () => {
                     setShowDialog(true);
                   }}
                 >
-                  {material.expirationDate ? "Expand" : "Show details"}
+                  Expand
                 </Typography>
               </CardContent>
             </Card>
@@ -194,12 +200,12 @@ const MaterialsDashboard = () => {
         })}
       </Box>
 
-      {/* Dialog להצגת פרטי חומר */}
       {selectedMaterial && (
         <Dialog open={showDialog} onClose={() => setShowDialog(false)}>
           <DialogTitle>{selectedMaterial.name}</DialogTitle>
           <DialogContent dividers>
             <Typography>ID: {selectedMaterial.ID}</Typography>
+            <Typography>Amount: {selectedMaterial.amount} {selectedMaterial.unit}</Typography>
             <Typography>Quantity: {selectedMaterial.quantity} {selectedMaterial.unit}</Typography>
             <Typography>Expiry Date: {selectedMaterial.expirationDate}</Typography>
             <Typography>Classification: {selectedMaterial.classification}</Typography>

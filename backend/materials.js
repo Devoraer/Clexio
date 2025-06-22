@@ -1,42 +1,78 @@
-const express = require("express");
-const router = express.Router();
-const { db } = require("./firebase");
-const admin = require("firebase-admin");
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const csv = require('csv-parser');
+const fs = require('fs');
+const path = require('path');
 
-// 📦 שליפת כל החומרים
-router.get("/", async (req, res) => {
+const { db } = require('./firebase');
+const materialsRouter = require('./materials');
+
+const app = express();
+const port = 3000;
+
+// ✅ Middleware
+app.use(cors());
+app.use(bodyParser.json());
+
+// ✅ שימוש ברואטר של materials
+app.use('/api/materials', materialsRouter);
+
+// 🔍 בדיקת תקשורת
+app.get('/api/ping', (req, res) => {
+  res.send({ message: 'pong' });
+});
+
+// ✅ טעינת CSV לקולקשן Materials
+app.post('/api/upload-csv', async (req, res) => {
+  const collectionName = 'Materials';
+  const csvFilePath = path.join(__dirname, 'Materials_csv.csv');
+
   try {
-    const snapshot = await db.collection("Materials").get();
-    const materials = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.status(200).send(materials);
+    let rowsProcessed = 0;
+
+    fs.createReadStream(csvFilePath)
+      .pipe(csv())
+      .on('data', async (row) => {
+        try {
+          await db.collection(collectionName).doc(row["ID"]).set(row);
+          rowsProcessed++;
+        } catch (error) {
+          console.error('❌ שגיאה בשורה:', row, error);
+        }
+      })
+      .on('end', () => {
+        console.log(`${rowsProcessed} שורות נטענו`);
+        res.status(200).send({ result: `CSV נטען בהצלחה (${rowsProcessed} שורות)` });
+      })
+      .on('error', (error) => {
+        console.error('❌ שגיאה בקריאת CSV:', error);
+        res.status(500).send({ error: 'בעיה בקריאת CSV' });
+      });
   } catch (error) {
-    console.error("❌ שגיאה בשליפת חומרים:", error);
-    res.status(500).send({ error: "שגיאה בשליפת החומרים" });
+    console.error('❌ שגיאה כללית:', error);
+    res.status(500).send({ error: 'כשל בטעינת קובץ' });
   }
 });
 
-// 🔍 שליפת חומר בודד לפי ID
-// ✅ materials.js – נתיב לעדכון כמות (Amount) עם המרה למספר
-router.put("/:id/amount", async (req, res) => {
-  const { id } = req.params;
-  const { amount } = req.body;
-
-  const numericAmount = Number(amount); // ✅ המרה בטוחה למספר
-
-  if (isNaN(numericAmount) || numericAmount < 0) {
-    return res.status(400).send({ error: "Invalid amount value" });
-  }
-
+// 🔧 שליפת מכונות (שמור להמשך)
+app.get('/api/machines', async (req, res) => {
   try {
-    await db.collection("Materials").doc(id).update({
-      Amount: numericAmount, // ✅ שמירה כמספר
-    });
-    res.status(200).send({ success: true, amount: numericAmount });
+    const snapshot = await db.collection('Machines').get();
+    const machines = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.send(machines);
   } catch (error) {
-    console.error("❌ Error updating amount:", error);
-    res.status(500).send({ error: "Failed to update amount" });
+    console.error('❌ שגיאה בשליפת מכונות:', error);
+    res.status(500).send({ error: 'שגיאה בשליפת מכונות' });
   }
 });
 
+// 🏠 דף הבית
+app.get("/", (req, res) => {
+  res.send("✨ Clexio API is running!");
+});
 
-module.exports = router;
+// 🚀 הפעלת השרת
+app.listen(port, () => {
+  console.log(`🚀 Server running at http://localhost:${port}`);
+});
