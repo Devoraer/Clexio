@@ -1,3 +1,4 @@
+// ✅ MaterialsDashboard.tsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -12,6 +13,7 @@ import {
   DialogActions,
   Button,
   Stack,
+  Grid,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import axios from "axios";
@@ -20,7 +22,6 @@ interface Material {
   ID: string;
   name: string;
   amount: number;
-  quantity: number;
   expirationDate: string;
   classification: string;
   unit: string;
@@ -48,7 +49,6 @@ const MaterialsDashboard = () => {
           ID: item.ID,
           name: item.Tradename || item.name || "Unknown",
           amount: Number(item.Amount) || 0,
-          quantity: Number(item.Quantity) || 0,
           expirationDate: item["Expiry Date"] || item.expirationDate || "Unknown",
           classification: item.No || item.classification || "Unknown",
           unit: item.Unit || "",
@@ -91,11 +91,6 @@ const MaterialsDashboard = () => {
       return;
     }
 
-    console.log("📤 שולחת בקשת עדכון:", {
-      id,
-      amount: newAmount,
-    });
-
     try {
       await axios.put(`http://localhost:3000/api/materials/${id}/amount`, {
         amount: newAmount,
@@ -107,7 +102,7 @@ const MaterialsDashboard = () => {
       setUpdateAmounts((prev) => ({ ...prev, [id]: "" }));
       setErrors((prev) => ({ ...prev, [id]: "" }));
     } catch (err) {
-      console.error("❌ שגיאה בעדכון:", err);
+      console.error("Update error:", err);
     }
   };
 
@@ -127,9 +122,7 @@ const MaterialsDashboard = () => {
       </Typography>
 
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-        <Button variant="contained" color="success" startIcon={<AddIcon />}>
-          Add Material
-        </Button>
+        <Button variant="contained" color="success" startIcon={<AddIcon />}>Add Material</Button>
         <TextField
           label="Search materials"
           variant="outlined"
@@ -139,66 +132,67 @@ const MaterialsDashboard = () => {
         />
       </Stack>
 
-      <Box display="flex" flexWrap="wrap" gap={3}>
+      <Grid container spacing={3}>
         {filteredMaterials.map((material) => {
           const expiry = checkExpiryStatus(material.expirationDate);
           return (
-            <Card
-              key={material.ID}
-              sx={{
-                width: 280,
-                borderRadius: 4,
-                boxShadow: 3,
-                p: 2,
-                backgroundColor: material.amount === 0 ? "#eeeeee" : "white",
-              }}
-            >
-              <CardContent>
-                <Chip label={expiry.status} color={expiry.color as any} sx={{ mb: 1 }} />
-                <Typography variant="h6" gutterBottom>{material.name}</Typography>
-                <Typography>ID: {material.ID}</Typography>
-                <Typography>Amount: {material.amount} {material.unit}</Typography>
-                <Typography>Quantity: {material.quantity} {material.unit}</Typography>
-                <Typography>Expiry Date: {material.expirationDate}</Typography>
+            <Grid item xs={12} sm={6} md={4} key={material.ID}>
+              <Card
+                sx={{
+                  borderRadius: 4,
+                  boxShadow: 3,
+                  p: 2,
+                  backgroundColor: material.amount === 0 ? "#eeeeee" : "white",
+                }}
+              >
+                <CardContent>
+                  <Chip label={expiry.status} color={expiry.color as any} sx={{ mb: 1 }} />
+                  <Typography variant="h6" gutterBottom>{material.name}</Typography>
+                  <Typography>ID: {material.ID}</Typography>
+                  <Typography sx={{ fontWeight: 500 }}>
+                    Amount: {material.amount} {material.unit}
+                  </Typography>
+                  <Typography>Expiry Date: {material.expirationDate}</Typography>
 
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                  <TextField
-                    label="Amount"
-                    type="number"
-                    size="small"
-                    value={updateAmounts[material.ID] || ""}
-                    onChange={(e) =>
-                      setUpdateAmounts((prev) => ({ ...prev, [material.ID]: e.target.value }))
-                    }
-                    error={!!errors[material.ID]}
-                    helperText={errors[material.ID] || ""}
-                    sx={{ width: 90 }}
-                  />
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => handleUpdateAmount(material.ID, material.amount)}
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                    <TextField
+                      label="Amount"
+                      type="number"
+                      size="small"
+                      value={updateAmounts[material.ID] || ""}
+                      onChange={(e) =>
+                        setUpdateAmounts((prev) => ({ ...prev, [material.ID]: e.target.value }))
+                      }
+                      error={!!errors[material.ID]}
+                      helperText={errors[material.ID] || ""}
+                      sx={{ width: 90 }}
+                    />
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => handleUpdateAmount(material.ID, material.amount)}
+                    >
+                      Update
+                    </Button>
+                  </Stack>
+
+                  <Typography
+                    variant="body2"
+                    color="primary"
+                    sx={{ mt: 1, cursor: "pointer", fontWeight: "bold" }}
+                    onClick={() => {
+                      setSelectedMaterial(material);
+                      setShowDialog(true);
+                    }}
                   >
-                    Update
-                  </Button>
-                </Stack>
-
-                <Typography
-                  variant="body2"
-                  color="primary"
-                  sx={{ mt: 1, cursor: "pointer", fontWeight: "bold" }}
-                  onClick={() => {
-                    setSelectedMaterial(material);
-                    setShowDialog(true);
-                  }}
-                >
-                  Expand
-                </Typography>
-              </CardContent>
-            </Card>
+                    Expand
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
           );
         })}
-      </Box>
+      </Grid>
 
       {selectedMaterial && (
         <Dialog open={showDialog} onClose={() => setShowDialog(false)}>
@@ -206,7 +200,6 @@ const MaterialsDashboard = () => {
           <DialogContent dividers>
             <Typography>ID: {selectedMaterial.ID}</Typography>
             <Typography>Amount: {selectedMaterial.amount} {selectedMaterial.unit}</Typography>
-            <Typography>Quantity: {selectedMaterial.quantity} {selectedMaterial.unit}</Typography>
             <Typography>Expiry Date: {selectedMaterial.expirationDate}</Typography>
             <Typography>Classification: {selectedMaterial.classification}</Typography>
             {selectedMaterial.location && <Typography>Location: {selectedMaterial.location}</Typography>}
