@@ -22,20 +22,16 @@ export default function FrontDashboard() {
     fetch("http://localhost:3000/api/machines")
       .then((res) => res.json())
       .then((data) => setMachinesCount(data.length))
-      .catch((err) => console.error("❌ שגיאה בשליפת מכשירים:", err));
+      .catch((err) => console.error("שגיאה בשליפת מכשירים:", err));
   }, []);
 
   return (
     <Box sx={{ display: "flex", direction: "rtl", height: "100vh" }}>
-      {/* Sidebar */}
       <Sidebar />
 
-      {/* Main Content */}
       <Box sx={{ flexGrow: 1, p: 4 }}>
-        {/* Header */}
         <DashboardHeader />
 
-        {/* Cards Section */}
         <Box
           sx={{
             display: "flex",

@@ -1,5 +1,3 @@
-//  src/pages/LoginPage.tsx
-
 import React from "react";
 import { Box, Typography, Avatar } from "@mui/material";
 import ScienceIcon from '@mui/icons-material/Science'; 

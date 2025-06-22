@@ -1,5 +1,3 @@
-// src/pages/HomePage.tsx (redesigned with sidebar and English only)
-
 import {
   Box,
   Card,
@@ -9,9 +7,10 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
-import PrecisionManufacturingIcon from "@mui/icons-material/PrecisionManufacturing"; // Equipment
-import ScienceIcon from "@mui/icons-material/Science"; // Samples
-import InventoryIcon from "@mui/icons-material/Inventory"; // Materials
+// Icons
+import FactoryIcon from "@mui/icons-material/Factory";
+import MedicationIcon from "@mui/icons-material/Medication";
+import MedicationLiquidIcon from "@mui/icons-material/MedicationLiquid";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HomeIcon from "@mui/icons-material/Home";
 
@@ -22,19 +21,19 @@ export default function HomePage() {
     {
       title: "Equipment",
       description: "Manage and track all lab equipment",
-      icon: <PrecisionManufacturingIcon sx={{ fontSize: 60, color: "#3f51b5" }} />,
+      icon: <FactoryIcon sx={{ fontSize: 60, color: "#3f51b5" }} />,
       route: "/machines",
     },
     {
       title: "Samples",
       description: "Track lab samples and their analysis",
-      icon: <ScienceIcon sx={{ fontSize: 60, color: "#9c27b0" }} />,
+      icon: <MedicationIcon sx={{ fontSize: 60, color: "#9c27b0" }} />,
       route: "/samples",
     },
     {
       title: "Materials",
       description: "Manage inventory of lab chemicals and supplies",
-      icon: <InventoryIcon sx={{ fontSize: 60, color: "#009688" }} />,
+      icon: <MedicationLiquidIcon sx={{ fontSize: 60, color: "#009688" }} />,
       route: "/materials",
     },
   ];
@@ -57,7 +56,7 @@ export default function HomePage() {
         <Typography variant="h6" fontWeight={700} mb={2}>
           Smart Lab
         </Typography>
-        <CardActionArea onClick={() => navigate("/")}> 
+        <CardActionArea onClick={() => navigate("/")}>
           <Box display="flex" alignItems="center" gap={1}>
             <HomeIcon /> <Typography>Home</Typography>
           </Box>
@@ -84,7 +83,7 @@ export default function HomePage() {
         }}
       >
         <Typography variant="h4" fontWeight={700} mb={4} color="#3f3f3f">
-          Lab Dashboard 🧪
+          Lab Dashboard
         </Typography>
 
         <Box

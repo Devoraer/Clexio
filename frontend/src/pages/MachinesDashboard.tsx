@@ -1,5 +1,3 @@
-// 📄 src/pages/MachinesDashboard.tsx
-
 import { Box, Typography } from "@mui/material";
 
 export default function MachinesDashboard() {

@@ -1,5 +1,3 @@
-// 📄 src/components/Sidebar.tsx
-
 import { List, ListItemButton, ListItemIcon, ListItemText, Typography, Box } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
@@ -26,7 +24,7 @@ export default function Sidebar() {
           <ListItemIcon>
             <SendIcon sx={{ color: "white" }} />
           </ListItemIcon>
-          <ListItemText primary="Data Anayles" />
+          <ListItemText primary="Data Analysis" />
         </ListItemButton>
         <ListItemButton onClick={() => alert("לוח שנה יתווסף בהמשך 😊")}>
           <ListItemIcon>

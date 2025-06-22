@@ -1,9 +1,9 @@
-// 📦 ייבוא ספריות
 const express = require("express");
 const router = express.Router();
-const { db } = require("./firebase"); // ✅ שימוש ב־db שאותחל מראש
+const { db } = require("./firebase");
+const admin = require("firebase-admin");
 
-// 🧪 שליפת כל החומרים מה־Firestore
+// 📦 שליפת כל החומרים
 router.get("/", async (req, res) => {
   try {
     const snapshot = await db.collection("Materials").get();
@@ -16,22 +16,27 @@ router.get("/", async (req, res) => {
 });
 
 // 🔍 שליפת חומר בודד לפי ID
-router.get("/:id", async (req, res) => {
+// ✅ materials.js – נתיב לעדכון כמות (Amount) עם המרה למספר
+router.put("/:id/amount", async (req, res) => {
   const { id } = req.params;
+  const { amount } = req.body;
+
+  const numericAmount = Number(amount); // ✅ המרה בטוחה למספר
+
+  if (isNaN(numericAmount) || numericAmount < 0) {
+    return res.status(400).send({ error: "Invalid amount value" });
+  }
 
   try {
-    const doc = await db.collection("Materials").doc(id).get();
-
-    if (!doc.exists) {
-      return res.status(404).send({ error: "החומר לא נמצא" });
-    }
-
-    const material = { id: doc.id, ...doc.data() };
-    res.status(200).send(material);
+    await db.collection("Materials").doc(id).update({
+      Amount: numericAmount, // ✅ שמירה כמספר
+    });
+    res.status(200).send({ success: true, amount: numericAmount });
   } catch (error) {
-    console.error("❌ שגיאה בשליפת חומר בודד:", error);
-    res.status(500).send({ error: "שגיאה בשליפת החומר" });
+    console.error("❌ Error updating amount:", error);
+    res.status(500).send({ error: "Failed to update amount" });
   }
 });
+
 
 module.exports = router;

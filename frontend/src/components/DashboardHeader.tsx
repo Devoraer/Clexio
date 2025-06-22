@@ -1,5 +1,3 @@
-// 📄 src/components/DashboardHeader.tsx
-
 import { Box, Typography } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 
