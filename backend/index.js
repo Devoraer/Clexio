@@ -1,4 +1,6 @@
 // 📁 backend/index.js
+
+// 📦 ייבוא ספריות
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -6,26 +8,29 @@ const csv = require('csv-parser');
 const fs = require('fs');
 const path = require('path');
 
+// 🔌 חיבור ל־Firebase
 const { db } = require('./firebase');
-const materialsRouter = require('./materials');
 
-
+// 🧠 יצירת אפליקציית אקספרס
 const app = express();
 const port = 3000;
 
-// ✅ Middleware
+// 🛠️ מידלוורים
 app.use(cors());
 app.use(bodyParser.json());
 
-// ✅ חיבור ל־Materials Router
-app.use('/api/materials', materialsRouter);
+// 📂 חיבור ל־Routers
+const materialsRouter = require('./materials');
+const samplesRouter = require('./samples');
+app.use("/api/materials", materialsRouter);
+app.use("/api/samples", samplesRouter);
 
-// 🛠️ בדיקת תקשורת
+// 🔍 בדיקת תקשורת
 app.get('/api/ping', (req, res) => {
   res.send({ message: 'pong' });
 });
 
-// 📥 טעינת CSV לקולקשן Firestore
+// 📤 טעינת CSV לקולקשן Firestore
 app.post('/api/upload-csv', async (req, res) => {
   const collectionName = 'Materials';
   const csvFilePath = path.join(__dirname, 'Materials_csv.csv');
@@ -57,7 +62,7 @@ app.post('/api/upload-csv', async (req, res) => {
   }
 });
 
-// 🧪 שליפת מכונות (לשימוש עתידי)
+// ⚙️ שליפת מכונות (לשימוש עתידי)
 app.get('/api/machines', async (req, res) => {
   try {
     const snapshot = await db.collection('Machines').get();
