@@ -1,4 +1,4 @@
-// index.js
+// 📁 backend/index.js
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -8,6 +8,7 @@ const path = require('path');
 
 const { db } = require('./firebase');
 const materialsRouter = require('./materials');
+
 
 const app = express();
 const port = 3000;
