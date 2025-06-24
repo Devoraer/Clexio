@@ -1,4 +1,4 @@
-ID,Department,Instrument ID,Instrument type,Location,Calibration interval,Calibrated by,Caibration Date
+ID,Department,Instrument ID,Instrument type,Location,Calibration interval,Calibrated by,Calibration Date
 1,Analytical,HPLC-CLX1,HPLC w/UV  Agilent 1100,Main Lab,12m,Dexcel,01/02/2024
 2,Analytical,HPLC-CLX2,HPLC w/UV  Agilent 1200,Main Lab,12m,Dexcel,01/05/2024
 3,Analytical,HPLC-CLX3,HPLC Agilent 1260,Main Lab,12m,Eldan,01/10/2024

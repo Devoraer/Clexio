@@ -22,15 +22,20 @@ app.use(bodyParser.json());
 // 📂 חיבור ל־Routers
 const materialsRouter = require('./materials');
 const samplesRouter = require('./samples');
+const machinesRouter = require('./machines');
+const stabilityChecklistRouter = require('./StabilityChecklistforsamples');
+
 app.use("/api/materials", materialsRouter);
 app.use("/api/samples", samplesRouter);
+app.use("/api/machines", machinesRouter);
+app.use("/api/stability-checklist", stabilityChecklistRouter); // ✅ הכל מטופל שם
 
 // 🔍 בדיקת תקשורת
 app.get('/api/ping', (req, res) => {
   res.send({ message: 'pong' });
 });
 
-// 📤 טעינת CSV לקולקשן Firestore
+// 📤 טעינת CSV של חומרים
 app.post('/api/upload-csv', async (req, res) => {
   const collectionName = 'Materials';
   const csvFilePath = path.join(__dirname, 'Materials_csv.csv');
@@ -62,7 +67,7 @@ app.post('/api/upload-csv', async (req, res) => {
   }
 });
 
-// ⚙️ שליפת מכונות (לשימוש עתידי)
+// ⚙️ שליפת מכונות
 app.get('/api/machines', async (req, res) => {
   try {
     const snapshot = await db.collection('Machines').get();

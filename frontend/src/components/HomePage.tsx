@@ -12,10 +12,10 @@ import { useNavigate } from "react-router-dom";
 
 // Icons
 import FactoryIcon from "@mui/icons-material/Factory";
-import MedicationLiquidIcon from "@mui/icons-material/Science"; // אייקון כימי ירוק
+import MedicationLiquidIcon from "@mui/icons-material/Science"; 
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HomeIcon from "@mui/icons-material/Home";
-import MedicationIcon from "@mui/icons-material/Medication"; // אייקון כדור ל־Samples
+import MedicationIcon from "@mui/icons-material/Medication"; 
 
 export default function HomePage() {
   const navigate = useNavigate();
