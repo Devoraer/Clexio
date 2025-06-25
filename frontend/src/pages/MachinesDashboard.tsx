@@ -1,4 +1,3 @@
-// 📁 frontend/pages/MachinesDashboard.tsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -31,55 +30,59 @@ const getCalibrationInfo = (calibrationDate: string, interval: string) => {
       return {
         nextCalibration: "N/A",
         status: "Invalid",
-        color: "error" as const,
+        chipLabel: "Invalid Date",
+        chipColor: "error" as const,
       };
     }
 
-    const months = parseInt(interval.toLowerCase().replace("m", ""));
+    // 📆 נשתמש בפורמט תקני
     const baseDate = dayjs(calibrationDate, "DD/MM/YYYY", true);
 
     if (!baseDate.isValid()) {
       return {
         nextCalibration: "N/A",
         status: "Invalid",
-        color: "error" as const,
+        chipLabel: "Invalid Date",
+        chipColor: "error" as const,
       };
     }
 
-    const nextDate = baseDate.add(months, "month");
+    const intervalMonths = parseInt(interval.toLowerCase().replace("m", ""));
+    const nextDate = baseDate.add(intervalMonths, "month");
+    const nextCalibration = nextDate.format("DD/MM/YYYY");
+
     const today = dayjs();
-    const diff = nextDate.diff(today, "day");
+    const daysUntilNext = nextDate.diff(today, "day");
+    const daysSinceCalibration = today.diff(baseDate, "day");
 
-    let status = "Valid";
-    let color: "success" | "warning" | "error" = "success";
+    let chipLabel = "Calibrated Recently";
+    let chipColor: "success" | "warning" | "error" = "success";
 
-    if (diff < 0) {
-      status = "Expired";
-      color = "error";
-    } else if (diff <= 30) {
-      status = "Expiring Soon";
-      color = "warning";
+    if (daysUntilNext < 0) {
+      chipLabel = "Calibration Overdue";
+      chipColor = "error";
+    } else if (daysUntilNext <= 14) {
+      chipLabel = "Calibration Due Soon";
+      chipColor = "warning";
+    } else if (daysSinceCalibration <= 14) {
+      chipLabel = "Calibrated Recently";
+      chipColor = "success";
     }
 
     return {
-      nextCalibration: nextDate.format("DD/MM/YYYY"),
-      status,
-      color,
+      nextCalibration,
+      status: chipLabel,
+      chipLabel,
+      chipColor,
     };
   } catch {
     return {
       nextCalibration: "N/A",
       status: "Invalid",
-      color: "error",
+      chipLabel: "Invalid Date",
+      chipColor: "error",
     };
   }
-};
-
-const getCalibrationNote = (status: string) => {
-  if (status === "Expired") return "Expired – Immediate calibration required";
-  if (status === "Expiring Soon") return "Calibration due soon";
-  if (status === "Invalid") return "Calibration date missing or invalid";
-  return "Valid – No calibration required";
 };
 
 const MachinesDashboard = () => {
@@ -104,36 +107,32 @@ const MachinesDashboard = () => {
 
       <Box display="flex" flexWrap="wrap" gap={2} justifyContent="flex-start">
         {machines.map((machine) => {
-          const { nextCalibration, status, color } = getCalibrationInfo(
+          const { nextCalibration, chipLabel, chipColor } = getCalibrationInfo(
             machine["Calibration Date"],
             machine["Calibration interval"]
           );
 
           return (
             <Box key={machine.ID} width="300px">
-              <Card elevation={3}>
-                <CardContent>
+              <Card elevation={2}>
+                <CardContent sx={{ backgroundColor: "#fafafa" }}>
                   <Typography variant="h6" color="primary">
                     {machine["Instrument ID"]}
                   </Typography>
 
-                  {/* ⛔️ הסרנו את ה-ID מכאן */}
-
-                  <Typography>
+                  <Typography variant="body2">
                     Calibration Date: {machine["Calibration Date"]}
                   </Typography>
-                  <Typography>
+                  <Typography variant="body2">
                     Interval: {machine["Calibration interval"]}
                   </Typography>
-                  <Typography>
+                  <Typography variant="body2">
                     Next Calibration: {nextCalibration}
                   </Typography>
 
-                  <Chip label={status} color={color} sx={{ mt: 1 }} />
-
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    {getCalibrationNote(status)}
-                  </Typography>
+                  <Box mt={1}>
+                    <Chip label={chipLabel} color={chipColor} size="small" />
+                  </Box>
 
                   <Box mt={1}>
                     <Button
@@ -153,10 +152,12 @@ const MachinesDashboard = () => {
 
                   <Collapse in={expandedCard === machine.ID}>
                     <Box mt={1}>
-                      <Typography>ID: {machine.ID}</Typography> {/* ✅ ה-ID מופיע רק בהרחבה */}
+                      <Typography>ID: {machine.ID}</Typography>
                       <Typography>Department: {machine.Department}</Typography>
                       <Typography>Location: {machine.Location}</Typography>
-                      <Typography>Type: {machine["Instrument type"]}</Typography>
+                      <Typography>
+                        Type: {machine["Instrument type"]}
+                      </Typography>
                       <Typography>
                         Calibrated by: {machine["Calibrated by"]}
                       </Typography>

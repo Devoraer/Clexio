@@ -1,8 +1,9 @@
-// 📁 backend/machines.js – Machines API Router (משופר)
+// 📁 backend/machines.js – Machines API Router (מתוקן עם פורמט DD/MM/YYYY)
 const express = require("express");
 const { db } = require("./firebase");
 const csv = require("csv-parser");
 const fs = require("fs");
+const dayjs = require("dayjs");
 
 const machinesRouter = express.Router();
 const collectionName = "Machines";
@@ -17,11 +18,29 @@ machinesRouter.get("/info/:id", async (req, res) => {
   else res.status(204).send();
 });
 
-// 🔍 GET /all – Get all machines
+// 🔍 GET /all – כולל תאריך בפורמט קריא
 machinesRouter.get("/all", async (req, res) => {
   try {
     const snapshot = await db.collection(collectionName).get();
-    const result = snapshot.docs.map(doc => doc.data());
+    const result = snapshot.docs.map(doc => {
+      const data = doc.data();
+      const rawDate = data["Calibration Date"];
+
+      const parsedDate =
+        rawDate?.seconds !== undefined
+          ? dayjs.unix(rawDate.seconds)
+          : dayjs(rawDate, "DD/MM/YYYY", true);
+
+      const formattedDate = parsedDate.isValid()
+        ? parsedDate.format("DD/MM/YYYY")
+        : "Invalid";
+
+      return {
+        ID: doc.id,
+        ...data,
+        "Calibration Date": formattedDate,
+      };
+    });
 
     res.status(result.length ? 200 : 204).send(result);
   } catch (error) {
@@ -40,7 +59,10 @@ machinesRouter.post("/", async (req, res) => {
     }
 
     await db.collection(collectionName).doc(newMachine.ID).set(newMachine);
-    res.status(201).send({ message: "Machine added successfully", data: newMachine });
+    res.status(201).send({
+      message: "Machine added successfully",
+      data: newMachine,
+    });
   } catch (error) {
     console.error("❌ Error adding machine:", error);
     res.status(500).send({ error: "Failed to add machine" });
@@ -57,11 +79,15 @@ machinesRouter.put("/:id", async (req, res) => {
     const existing = await docRef.get();
 
     if (!existing.exists) {
-      return res.status(404).send({ error: `Machine with ID ${id} not found` });
+      return res
+        .status(404)
+        .send({ error: "Machine with ID " + id + " not found" });
     }
 
     await docRef.update(updatedData);
-    res.status(200).send({ message: `Machine with ID ${id} updated`, data: updatedData });
+    res
+      .status(200)
+      .send({ message: "Machine with ID " + id + " updated", data: updatedData });
   } catch (error) {
     console.error("❌ Error updating machine:", error);
     res.status(500).send({ error: "Failed to update machine" });
@@ -85,7 +111,9 @@ machinesRouter.post("/upload-csv", async (req, res) => {
             db.collection(collectionName).doc(machine.ID).set(machine)
           );
           await Promise.all(writeOps);
-          res.status(201).send({ message: "CSV uploaded successfully", count: machines.length });
+          res
+            .status(201)
+            .send({ message: "CSV uploaded successfully", count: machines.length });
         } catch (error) {
           console.error("❌ Failed to write CSV machines:", error);
           res.status(500).send({ error: "Failed to upload CSV machines" });
@@ -107,7 +135,9 @@ machinesRouter.delete("/:id", async (req, res) => {
 
   try {
     await db.collection(collectionName).doc(id).delete();
-    res.status(200).send({ message: `Machine with ID ${id} has been deleted` });
+    res
+      .status(200)
+      .send({ message: "Machine with ID " + id + " has been deleted" });
   } catch (error) {
     console.error("❌ Error deleting machine:", error);
     res.status(500).send({ error: "Failed to delete machine" });
