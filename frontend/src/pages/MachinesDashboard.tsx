@@ -98,7 +98,7 @@ const MachinesDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    axios.get("http://localhost:3000/api/machines").then((res) => {
+    axios.get("http://localhost:3000/api/machines/all").then((res) => {
       setMachines(res.data);
     });
   }, []);
