@@ -75,15 +75,12 @@ router.post("/", async (req, res) => {
       testsRequired
     } = req.body;
 
-    // בדיקת שדות חובה
     if (!clexioNumber || !dateOfReceipt || !sampleName) {
       return res.status(400).send({ error: "חסרים שדות חובה" });
     }
 
-    // קבלת ID רץ חדש
     const newId = (await getNextId()).toString();
 
-    // יצירת דגימה חדשה
     const newSample = {
       ID: newId,
       clexioNumber,
@@ -119,6 +116,40 @@ router.put("/:id/comment", async (req, res) => {
   } catch (error) {
     console.error("❌ שגיאה בעדכון הערה:", error);
     res.status(500).send({ error: "שגיאה בעדכון הערה" });
+  }
+});
+
+// ✅ עדכון completionDate ו-completedBy לפי ID כולל המרת פורמט תאריך ל-dd/mm/yyyy
+router.put("/:id/completion", async (req, res) => {
+  const { id } = req.params;
+  const { completionDate, completedBy } = req.body;
+
+  if (!completionDate && !completedBy) {
+    return res.status(400).send({ error: "At least one field (completionDate or completedBy) is required" });
+  }
+
+  try {
+    const updateData = {};
+
+    if (completionDate) {
+      // אם הפורמט הוא yyyy-mm-dd, המרה ל-dd/mm/yyyy
+      if (/^\d{4}-\d{2}-\d{2}$/.test(completionDate)) {
+        const [year, month, day] = completionDate.split("-");
+        updateData.completionDate = `${day}/${month}/${year}`;
+      } else {
+        updateData.completionDate = completionDate; // נניח שהוא כבר בפורמט נכון
+      }
+    }
+
+    if (completedBy) {
+      updateData.completedBy = completedBy;
+    }
+
+    await db.collection("Samples").doc(id.toString()).update(updateData);
+    res.status(200).send({ message: "Sample completion info updated successfully" });
+  } catch (error) {
+    console.error("❌ שגיאה בעדכון completion של דגימה:", error);
+    res.status(500).send({ error: "שגיאה בעדכון שדות השלמה" });
   }
 });
 
