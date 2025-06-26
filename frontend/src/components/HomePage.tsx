@@ -10,28 +10,27 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
-// Icons
-import FactoryIcon from "@mui/icons-material/Factory";
-import MedicationLiquidIcon from "@mui/icons-material/Science"; // אייקון כימי ירוק
+// 🧠 Icons
+import MedicationLiquidIcon from "@mui/icons-material/Science"; 
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HomeIcon from "@mui/icons-material/Home";
-import MedicationIcon from "@mui/icons-material/Medication"; // אייקון כדור ל־Samples
+import MedicationIcon from "@mui/icons-material/Medication"; 
+
+// 🖼️ אייקון ציוד מתמונה
+import MachineIcon from "../icones/machine.png";
 
 export default function HomePage() {
   const navigate = useNavigate();
 
-  // 🔢 סטטיסטיקות של החומרים
   const [materialStats, setMaterialStats] = useState({
     total: 0,
     expiringSoon: 0,
   });
 
-  // 🔢 סטטיסטיקות של דגימות
   const [sampleStats, setSampleStats] = useState({
     total: 0,
   });
 
-  // 📡 שליפת חומרים
   useEffect(() => {
     fetch("http://localhost:3000/api/materials/summary")
       .then((res) => res.json())
@@ -39,7 +38,6 @@ export default function HomePage() {
       .catch((err) => console.error("❌ Error fetching material summary:", err));
   }, []);
 
-  // 📡 שליפת דגימות
   useEffect(() => {
     fetch("http://localhost:3000/api/samples/summary")
       .then((res) => res.json())
@@ -47,39 +45,37 @@ export default function HomePage() {
       .catch((err) => console.error("❌ Error fetching sample summary:", err));
   }, []);
 
-  // 🎴 כרטיסי הדשבורד
   const cards = [
     {
       title: "Equipment",
-      description: "Manage and track all lab equipment",
       icon: (
         <Box
           sx={{
             backgroundColor: "#e8edfa",
             borderRadius: "50%",
-            width: 48,
-            height: 48,
+            width: 60,
+            height: 60,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             margin: "0 auto",
+            overflow: "hidden",
           }}
         >
-          <FactoryIcon sx={{ fontSize: 28, color: "#3f51b5" }} />
+          <img src={MachineIcon} alt="Machine" style={{ width: 36, height: 36 }} />
         </Box>
       ),
       route: "/machines",
     },
     {
       title: "Samples",
-      description: "Track lab samples and their analysis",
       icon: (
         <Box
           sx={{
             backgroundColor: "#f3e5f5",
             borderRadius: "50%",
-            width: 48,
-            height: 48,
+            width: 60,
+            height: 60,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -93,22 +89,31 @@ export default function HomePage() {
       stats: (
         <Stack direction="row" justifyContent="center" mt={2}>
           <Chip
-            label={`Total: ${sampleStats.total}`}
-            sx={{ bgcolor: "#f0f0f0", color: "#333", fontWeight: "bold" }}
+            label={
+              sampleStats.total !== undefined
+                ? `Total: ${sampleStats.total}`
+                : "Loading..."
+            }
+            sx={{
+              bgcolor: "#f0f0f0",
+              color: "#333",
+              fontWeight: "bold",
+              transition: "0.3s",
+              ":hover": { boxShadow: 2 },
+            }}
           />
         </Stack>
       ),
     },
     {
       title: "Materials",
-      description: "Manage inventory of lab chemicals and expiry dates",
       icon: (
         <Box
           sx={{
             backgroundColor: "#e5f7ef",
             borderRadius: "50%",
-            width: 48,
-            height: 48,
+            width: 60,
+            height: 60,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -123,11 +128,23 @@ export default function HomePage() {
         <Stack direction="row" spacing={1} justifyContent="center" mt={2}>
           <Chip
             label={`Total: ${materialStats.total}`}
-            sx={{ bgcolor: "#f0f0f0", color: "#333", fontWeight: "bold" }}
+            sx={{
+              bgcolor: "#f0f0f0",
+              color: "#333",
+              fontWeight: "bold",
+              transition: "0.3s",
+              ":hover": { boxShadow: 2 },
+            }}
           />
           <Chip
             label={`${materialStats.expiringSoon} expiring soon`}
-            sx={{ bgcolor: "#fff3e0", color: "#fb8c00", fontWeight: "bold" }}
+            sx={{
+              bgcolor: "#fff3e0",
+              color: "#fb8c00",
+              fontWeight: "bold",
+              transition: "0.3s",
+              ":hover": { boxShadow: 2 },
+            }}
           />
         </Stack>
       ),
@@ -178,7 +195,17 @@ export default function HomePage() {
           p: 4,
         }}
       >
-        <Typography variant="h4" fontWeight={700} mb={4} color="#3f3f3f">
+        <Typography
+          variant="h4"
+          fontWeight={700}
+          mb={4}
+          sx={{
+            color: "#2c3e50",
+            background: "linear-gradient(to right, #2196f3, #21cbf3)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }}
+        >
           Lab Dashboard
         </Typography>
 
@@ -195,7 +222,7 @@ export default function HomePage() {
               key={index}
               sx={{
                 width: 280,
-                minHeight: 260,
+                minHeight: 220,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -215,13 +242,6 @@ export default function HomePage() {
                   <Box mb={2}>{card.icon}</Box>
                   <Typography variant="h6" fontWeight={600} gutterBottom>
                     {card.title}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ fontSize: "0.9rem" }}
-                  >
-                    {card.description}
                   </Typography>
                   {card.stats}
                 </CardContent>

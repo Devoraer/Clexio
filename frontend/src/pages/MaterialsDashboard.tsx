@@ -1,4 +1,4 @@
-// ✅ MaterialsDashboard.tsx – גרסה מעודכנת עם כפתורי Update + Expand יותר למעלה
+// ✅ MaterialsDashboard.tsx – כולל שדות מורחבים בתוך Collapse
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -7,10 +7,7 @@ import {
   Typography,
   Chip,
   TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Collapse,
   Button,
   Stack,
   Menu,
@@ -19,6 +16,7 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import AddMaterial from "../components/AddMaterial";
 import axios from "axios";
 
@@ -40,8 +38,7 @@ interface Material {
 const MaterialsDashboard = () => {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [search, setSearch] = useState("");
-  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
-  const [showDialog, setShowDialog] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [updateAmounts, setUpdateAmounts] = useState<{ [id: string]: string }>({});
   const [errors, setErrors] = useState<{ [id: string]: string }>({});
   const [open, setOpen] = useState(false);
@@ -109,6 +106,12 @@ const MaterialsDashboard = () => {
     }
   };
 
+  const toggleExpand = (id: string) => {
+    setExpandedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
   const filteredMaterials = materials
     .filter((mat) => {
       const status = checkExpiryStatus(mat.expirationDate).status;
@@ -166,7 +169,6 @@ const MaterialsDashboard = () => {
         sx={{
           display: "grid",
           gap: 3,
-          width: "100%",
           gridTemplateColumns: {
             xs: "1fr",
             sm: "repeat(2, 1fr)",
@@ -177,25 +179,33 @@ const MaterialsDashboard = () => {
       >
         {filteredMaterials.map((material) => {
           const expiry = checkExpiryStatus(material.expirationDate);
+          const isExpanded = expandedIds.includes(material.ID);
           return (
             <Card key={material.ID} sx={{ borderRadius: 4, boxShadow: 3 }}>
-              <CardContent sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-                <Box sx={{ mb: 1 }}>
-                  <Chip label={expiry.status} color={expiry.color as any} sx={{ mb: 1 }} />
-                  <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold", minHeight: "56px" }}>
-                    {material.name}
-                  </Typography>
-                </Box>
+              <CardContent>
+                <Chip label={expiry.status} color={expiry.color as any} sx={{ mb: 1 }} />
+                <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>
+                  {material.name}
+                </Typography>
+                <Typography>ID: {material.ID}</Typography>
+                <Typography>
+                  Amount: {material.amount} {material.unit}
+                </Typography>
+                <Typography>Expiry Date: {material.expirationDate}</Typography>
 
-                <Box sx={{ mb: 2 }}>
-                  <Typography>ID: {material.ID}</Typography>
-                  <Typography>
-                    Amount: {material.amount} {material.unit}
-                  </Typography>
-                  <Typography>Expiry Date: {material.expirationDate}</Typography>
-                </Box>
+                <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                  <Box mt={2}>
+                    {material.location && <Typography>Location: {material.location}</Typography>}
+                    {material.lot && <Typography>Lot: {material.lot}</Typography>}
+                    {material.vendor && <Typography>Vendor: {material.vendor}</Typography>}
+                    {material.casNumber && <Typography>CAS Number: {material.casNumber}</Typography>}
+                    {material.msds && <Typography>MSDS: {material.msds}</Typography>}
+                    {material.coa && <Typography>CoA: {material.coa}</Typography>}
+                    <Typography>No: {material.classification}</Typography>
+                  </Box>
+                </Collapse>
 
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ justifyContent: "space-between" }}>
+                <Stack direction="row" spacing={1} alignItems="center" mt={2}>
                   <TextField
                     label="Amount"
                     type="number"
@@ -217,11 +227,8 @@ const MaterialsDashboard = () => {
                   </Button>
                   <Button
                     size="small"
-                    endIcon={<ExpandMoreIcon />}
-                    onClick={() => {
-                      setSelectedMaterial(material);
-                      setShowDialog(true);
-                    }}
+                    endIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                    onClick={() => toggleExpand(material.ID)}
                   >
                     Expand
                   </Button>
@@ -231,31 +238,6 @@ const MaterialsDashboard = () => {
           );
         })}
       </Box>
-
-      {selectedMaterial && (
-        <Dialog open={showDialog} onClose={() => setShowDialog(false)}>
-          <DialogTitle>{selectedMaterial.name}</DialogTitle>
-          <DialogContent dividers>
-            <Typography>ID: {selectedMaterial.ID}</Typography>
-            <Typography>
-              Amount: {selectedMaterial.amount} {selectedMaterial.unit}
-            </Typography>
-            <Typography>Expiry Date: {selectedMaterial.expirationDate}</Typography>
-            <Typography>Classification: {selectedMaterial.classification}</Typography>
-            {selectedMaterial.location && <Typography>Location: {selectedMaterial.location}</Typography>}
-            {selectedMaterial.lot && <Typography>Lot: {selectedMaterial.lot}</Typography>}
-            {selectedMaterial.vendor && <Typography>Vendor: {selectedMaterial.vendor}</Typography>}
-            {selectedMaterial.casNumber && <Typography>CAS Number: {selectedMaterial.casNumber}</Typography>}
-            {selectedMaterial.msds && <Typography>MSDS: {selectedMaterial.msds}</Typography>}
-            {selectedMaterial.coa && <Typography>CoA: {selectedMaterial.coa}</Typography>}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowDialog(false)} color="primary">
-              Close
-            </Button>
-          </DialogActions>
-        </Dialog>
-      )}
 
       <AddMaterial onMaterialAdded={fetchMaterials} />
     </Box>
