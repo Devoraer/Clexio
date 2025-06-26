@@ -7,14 +7,15 @@ import {
   Typography,
   Chip,
   Stack,
+  TextField,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
 // 🧠 Icons
-import MedicationLiquidIcon from "@mui/icons-material/Science"; 
+import MedicationLiquidIcon from "@mui/icons-material/Science";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HomeIcon from "@mui/icons-material/Home";
-import MedicationIcon from "@mui/icons-material/Medication"; 
+import MedicationIcon from "@mui/icons-material/Medication";
 
 // 🖼️ אייקון ציוד מתמונה
 import MachineIcon from "../icones/machine.png";
@@ -31,6 +32,11 @@ export default function HomePage() {
     total: 0,
   });
 
+  const [equipmentStats, setEquipmentStats] = useState({
+    total: 0,
+    overdue: 0,
+  });
+
   useEffect(() => {
     fetch("http://localhost:3000/api/materials/summary")
       .then((res) => res.json())
@@ -43,6 +49,13 @@ export default function HomePage() {
       .then((res) => res.json())
       .then((data) => setSampleStats(data))
       .catch((err) => console.error("❌ Error fetching sample summary:", err));
+  }, []);
+
+  useEffect(() => {
+    fetch("http://localhost:3000/api/machines/summary")
+      .then((res) => res.json())
+      .then((data) => setEquipmentStats(data))
+      .catch((err) => console.error("❌ Error fetching equipment summary:", err));
   }, []);
 
   const cards = [
@@ -66,6 +79,30 @@ export default function HomePage() {
         </Box>
       ),
       route: "/machines",
+      stats: (
+        <Stack direction="row" spacing={1} justifyContent="center" mt={2}>
+          <Chip
+            label={`Total: ${equipmentStats.total}`}
+            sx={{
+              bgcolor: "#f0f0f0",
+              color: "#333",
+              fontWeight: "bold",
+              transition: "0.3s",
+              ":hover": { boxShadow: 2 },
+            }}
+          />
+          <Chip
+            label={`${equipmentStats.overdue} overdue`}
+            sx={{
+              bgcolor: "#fdecea",
+              color: "#d32f2f",
+              fontWeight: "bold",
+              transition: "0.3s",
+              ":hover": { boxShadow: 2 },
+            }}
+          />
+        </Stack>
+      ),
     },
     {
       title: "Samples",

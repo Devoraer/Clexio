@@ -1,4 +1,4 @@
-// 📁 backend/machines.js – Machines API Router (מתוקן עם פורמט DD/MM/YYYY)
+// 📁 backend/machines.js – Machines API Router (מעודכן עם סיכום ציוד)
 const express = require("express");
 const { db } = require("./firebase");
 const csv = require("csv-parser");
@@ -46,6 +46,46 @@ machinesRouter.get("/all", async (req, res) => {
   } catch (error) {
     console.error("❌ Failed to fetch machines:", error);
     res.status(500).send({ error: "Failed to fetch machines" });
+  }
+});
+
+// 📊 GET /summary – סיכום ציוד: total + overdue
+machinesRouter.get("/summary", async (req, res) => {
+  try {
+    const snapshot = await db.collection(collectionName).get();
+    const all = snapshot.docs.map(doc => doc.data());
+
+    let total = 0;
+    let overdue = 0;
+
+    const today = dayjs();
+
+    all.forEach(machine => {
+      const calDateRaw = machine["Calibration Date"];
+      const intervalRaw = machine["Calibration interval"];
+
+      if (!calDateRaw || !intervalRaw) return;
+
+      const interval = parseInt(intervalRaw.toLowerCase().replace("m", ""));
+      const baseDate =
+        calDateRaw?.seconds !== undefined
+          ? dayjs.unix(calDateRaw.seconds)
+          : dayjs(calDateRaw, "DD/MM/YYYY");
+
+      if (!baseDate.isValid()) return;
+
+      const nextCal = baseDate.add(interval, "month");
+      total++;
+
+      if (nextCal.isBefore(today)) {
+        overdue++;
+      }
+    });
+
+    res.status(200).send({ total, overdue });
+  } catch (error) {
+    console.error("❌ Error in /summary:", error);
+    res.status(500).send({ error: "Failed to calculate equipment summary" });
   }
 });
 
