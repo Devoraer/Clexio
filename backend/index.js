@@ -3,7 +3,6 @@
 // 📦 ייבוא ספריות
 const express = require("express");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const csv = require("csv-parser");
 const fs = require("fs");
 const path = require("path");
@@ -17,7 +16,7 @@ const port = 3000;
 
 // 🛠️ מידלוורים
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json()); // ✅ מודרני יותר מ־bodyParser.json()
 
 // 📂 חיבור ל־Routers
 const materialsRouter = require("./materials");
@@ -28,7 +27,7 @@ const stabilityChecklistRouter = require("./StabilityChecklistforsamples");
 app.use("/api/materials", materialsRouter);
 app.use("/api/samples", samplesRouter);
 app.use("/api/machines", machinesRouter);
-app.use("/api/stability-checklist", stabilityChecklistRouter); // ✅ הכל מטופל שם
+app.use("/api/stability-checklist", stabilityChecklistRouter);
 
 // 🔍 בדיקת תקשורת
 app.get("/api/ping", (req, res) => {
@@ -40,9 +39,10 @@ app.post("/api/upload-csv", async (req, res) => {
   const collectionName = "Materials";
   const csvFilePath = path.join(__dirname, "Materials_csv.csv");
 
-  try {
-    let rowsProcessed = 0;
+  let rowsProcessed = 0;
+  let responseSent = false;
 
+  try {
     fs.createReadStream(csvFilePath)
       .pipe(csv())
       .on("data", async (row) => {
@@ -54,18 +54,27 @@ app.post("/api/upload-csv", async (req, res) => {
         }
       })
       .on("end", () => {
-        console.log(`${rowsProcessed} שורות נטענו ✅`);
-        res
-          .status(200)
-          .send({ result: `CSV נטען בהצלחה (${rowsProcessed} שורות)` });
+        if (!responseSent) {
+          responseSent = true;
+          console.log(`${rowsProcessed} שורות נטענו ✅`);
+          res
+            .status(200)
+            .send({ result: `CSV נטען בהצלחה (${rowsProcessed} שורות)` });
+        }
       })
       .on("error", (error) => {
-        console.error("❌ שגיאה בקריאת CSV:", error);
-        res.status(500).send({ error: "בעיה בקריאת CSV" });
+        if (!responseSent) {
+          responseSent = true;
+          console.error("❌ שגיאה בקריאת CSV:", error);
+          res.status(500).send({ error: "בעיה בקריאת CSV" });
+        }
       });
   } catch (error) {
-    console.error("❌ שגיאה כללית:", error);
-    res.status(500).send({ error: "כשל בטעינת קובץ" });
+    if (!responseSent) {
+      responseSent = true;
+      console.error("❌ שגיאה כללית:", error);
+      res.status(500).send({ error: "כשל בטעינת קובץ" });
+    }
   }
 });
 
