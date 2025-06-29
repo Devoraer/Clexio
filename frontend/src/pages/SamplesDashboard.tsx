@@ -1,4 +1,5 @@
 // ✅ SamplesDashboard.tsx – גרסה עם מיון לפי In progress קודם + שמירה בפורמט dd/mm/yyyy
+// ✅ SamplesDashboard.tsx – גרסה עם מיון לפי In progress קודם + שילוב Stability checklist + Expand מלא
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -20,7 +21,9 @@ import AddIcon from "@mui/icons-material/Add";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
+// טיפוסים
 interface Sample {
   ID: number;
   dateOfReceipt: string;
@@ -37,17 +40,50 @@ interface Sample {
   completedBy: string;
 }
 
+interface StabilityChecklistItem {
+  ID: number;
+  openedDate: string;
+  stabilityName: string;
+  projectName: string;
+  dosageForm: string;
+  batchNumber: string;
+  strength: string;
+  typeOfContainer: string;
+  typeOfClosure: string;
+  desiccant: string;
+  cottonMaterial: string;
+  storageConditions: string;
+  testIntervalsLongTerm: string;
+  testIntervalsIntermediate: string;
+  testIntervalsAccelerated: string;
+  containerOrientation: string;
+  specNumber: string;
+  testName: string;
+  conditionsAndIntervals: string;
+  amount: string;
+  totalAmount: string;
+  nameSignature1: string;
+  date1: string;
+  nameSignature2: string;
+  date2: string;
+  nameSignature3: string;
+  date3: string;
+}
+
+// קומפוננטה
 const SamplesDashboard = () => {
+  const navigate = useNavigate();
   const [samples, setSamples] = useState<Sample[]>([]);
+  const [stabilityItems, setStabilityItems] = useState<StabilityChecklistItem[]>([]);
   const [search, setSearch] = useState("");
   const [selectedSample, setSelectedSample] = useState<Sample | null>(null);
-  const [showDialog, setShowDialog] = useState(false);
+  const [selectedStability, setSelectedStability] = useState<StabilityChecklistItem | null>(null);
+  const [showSampleDialog, setShowSampleDialog] = useState(false);
+  const [showStabilityDialog, setShowStabilityDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"All" | "Completed" | "In progress">("All");
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const openMenu = Boolean(anchorEl);
-  const [updateFields, setUpdateFields] = useState<{
-    [id: number]: { containers: string; completionDate: string; completedBy: string };
-  }>({});
+  const [updateFields, setUpdateFields] = useState<{ [id: number]: { containers: string; completionDate: string; completedBy: string } }>({});
 
   const fetchSamples = async () => {
     try {
@@ -73,21 +109,29 @@ const SamplesDashboard = () => {
     }
   };
 
+  const fetchStability = async () => {
+    try {
+      const response = await axios.get("http://localhost:3000/api/stability-checklist");
+      setStabilityItems(response.data);
+    } catch (error) {
+      console.error("Error fetching stability checklist:", error);
+    }
+  };
+
   useEffect(() => {
     fetchSamples();
+    fetchStability();
   }, []);
 
   const getStatus = (sample: Sample) => {
     const rawDate = sample.completionDate;
-    if (rawDate) {
-      if (rawDate.includes("/")) {
-        const [day, month, year] = rawDate.split("/").map(Number);
-        const completion = new Date(year, month - 1, day);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (!isNaN(completion.getTime()) && completion <= today) {
-          return { status: "Completed", color: "success", weight: 0 };
-        }
+    if (rawDate && rawDate.includes("/")) {
+      const [day, month, year] = rawDate.split("/").map(Number);
+      const completion = new Date(year, month - 1, day);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (!isNaN(completion.getTime()) && completion <= today) {
+        return { status: "Completed", color: "success", weight: 0 };
       }
     }
     return { status: "In progress", color: "warning", weight: 1 };
@@ -104,20 +148,17 @@ const SamplesDashboard = () => {
       const updateData: any = {};
       if (fields.completionDate) {
         const [year, month, day] = fields.completionDate.split("-");
-        updateData.completionDate = `${day}/${month}/${year}`; // 👉 הפורמט המבוקש
+        updateData.completionDate = `${day}/${month}/${year}`;
       }
       if (fields.completedBy) {
         updateData.completedBy = fields.completedBy;
       }
 
       await axios.put(`http://localhost:3000/api/samples/${id}/completion`, updateData);
-      await fetchSamples(); // ריענון לאחר עדכון
+      await fetchSamples();
       setUpdateFields((prev) => ({ ...prev, [id]: { containers: "", completionDate: "", completedBy: "" } }));
     } catch (error) {
       console.error("Update error:", error);
-      if (axios.isAxiosError(error)) {
-        console.error("Response data:", error.response?.data);
-      }
     }
   };
 
@@ -127,15 +168,16 @@ const SamplesDashboard = () => {
       return statusFilter === "All" || status === statusFilter;
     })
     .filter((s) => s.sampleName.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => getStatus(b).weight - getStatus(a).weight); // 👉 In Progress ראשון
+    .sort((a, b) => getStatus(b).weight - getStatus(a).weight);
 
   return (
     <Box sx={{ padding: 4, backgroundColor: "#f5f7fb", width: "100%", boxSizing: "border-box" }}>
       <Typography variant="h4" gutterBottom>Samples Dashboard</Typography>
-      <Typography variant="body1" sx={{ mb: 3 }}>Total samples loaded: {samples.length}</Typography>
+      <Typography variant="body1" sx={{ mb: 3 }}>Total samples loaded: {samples.length} | Stability checklist loaded: {stabilityItems.length}</Typography>
 
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3, flexWrap: "wrap" }}>
         <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={fetchSamples}>Add Sample</Button>
+        <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={() => navigate("/add-stability")}>Add Stability Check</Button>
         <Button variant="outlined" startIcon={<FilterListIcon />} onClick={(e) => setAnchorEl(e.currentTarget)}>Filter</Button>
         <Menu anchorEl={anchorEl} open={openMenu} onClose={() => setAnchorEl(null)}>
           {["All", "Completed", "In progress"].map((status) => (
@@ -163,18 +205,10 @@ const SamplesDashboard = () => {
           const status = getStatus(sample);
           return (
             <Card key={sample.ID} sx={{ borderRadius: 4, boxShadow: 3 }}>
-              <CardContent sx={{
-                display: "flex",
-                flexDirection: "column",
-                minHeight: 250,
-                justifyContent: "space-between",
-                padding: 2,
-              }}>
+              <CardContent sx={{ display: "flex", flexDirection: "column", minHeight: 250, justifyContent: "space-between", padding: 2 }}>
                 <Box sx={{ mb: 1 }}>
                   <Chip label={status.status} color={status.color as any} sx={{ mb: 1 }} />
-                  <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold", minHeight: "40px", fontSize: "1.1rem" }}>
-                    {sample.sampleName}
-                  </Typography>
+                  <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>{sample.sampleName}</Typography>
                 </Box>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2">ID: {sample.ID}</Typography>
@@ -182,95 +216,65 @@ const SamplesDashboard = () => {
                   <Typography variant="body2">Clexio Number: {sample.clexioNumber}</Typography>
                   <Typography variant="body2">Containers: {sample.containers}</Typography>
                 </Box>
-
                 {status.status === "In progress" && (
-                  <Box sx={{ mb: 2 }}>
-                    <Stack spacing={1.5}>
-                      <TextField
-                        label="Completion Date"
-                        type="date"
-                        size="small"
-                        fullWidth
-                        InputLabelProps={{ shrink: true }}
-                        value={updateFields[sample.ID]?.completionDate || ""}
-                        onChange={(e) => {
-                          setUpdateFields((prev) => ({
-                            ...prev,
-                            [sample.ID]: {
-                              ...prev[sample.ID],
-                              completionDate: e.target.value,
-                            },
-                          }));
-                        }}
-                      />
-                      <TextField
-                        label="Completed By"
-                        size="small"
-                        fullWidth
-                        value={updateFields[sample.ID]?.completedBy || ""}
-                        onChange={(e) => {
-                          setUpdateFields((prev) => ({
-                            ...prev,
-                            [sample.ID]: {
-                              ...prev[sample.ID],
-                              completedBy: e.target.value,
-                            },
-                          }));
-                        }}
-                      />
-                    </Stack>
-                  </Box>
-                )}
-
-                <Box sx={{ mt: 1 }}>
-                  <Stack direction="row" spacing={1} justifyContent="space-between">
-                    {status.status === "In progress" && (
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => handleUpdate(sample.ID)}
-                      >
-                        Update
-                      </Button>
-                    )}
-                    <Button
-                      size="small"
-                      endIcon={<ExpandMoreIcon />}
-                      onClick={() => {
-                        setSelectedSample(sample);
-                        setShowDialog(true);
-                      }}
-                    >
-                      Expand
-                    </Button>
+                  <Stack spacing={1.5}>
+                    <TextField label="Completion Date" type="date" size="small" fullWidth InputLabelProps={{ shrink: true }} value={updateFields[sample.ID]?.completionDate || ""} onChange={(e) => setUpdateFields((prev) => ({ ...prev, [sample.ID]: { ...prev[sample.ID], completionDate: e.target.value } }))} />
+                    <TextField label="Completed By" size="small" fullWidth value={updateFields[sample.ID]?.completedBy || ""} onChange={(e) => setUpdateFields((prev) => ({ ...prev, [sample.ID]: { ...prev[sample.ID], completedBy: e.target.value } }))} />
                   </Stack>
-                </Box>
+                )}
+                <Stack direction="row" spacing={1} justifyContent="space-between" sx={{ mt: 2 }}>
+                  {status.status === "In progress" && <Button size="small" variant="outlined" onClick={() => handleUpdate(sample.ID)}>Update</Button>}
+                  <Button size="small" endIcon={<ExpandMoreIcon />} onClick={() => { setSelectedSample(sample); setShowSampleDialog(true); }}>Expand</Button>
+                </Stack>
               </CardContent>
             </Card>
           );
         })}
+
+        {stabilityItems.map((item) => (
+          <Card key={`stability-${item.ID}`} sx={{ borderRadius: 4, boxShadow: 3 }}>
+            <CardContent sx={{ display: "flex", flexDirection: "column", minHeight: 180, justifyContent: "space-between", padding: 2 }}>
+              <Box sx={{ mb: 1 }}>
+                <Chip label="Stability" color="info" sx={{ mb: 1 }} />
+                <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>{item.stabilityName}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2">ID: {item.ID}</Typography>
+                <Typography variant="body2">Opened Date: {item.openedDate}</Typography>
+              </Box>
+              <Button size="small" endIcon={<ExpandMoreIcon />} sx={{ mt: 2 }} onClick={() => {
+                setSelectedStability(item);
+                setShowStabilityDialog(true);
+              }}>Expand</Button>
+            </CardContent>
+          </Card>
+        ))}
       </Box>
 
       {selectedSample && (
-        <Dialog open={showDialog} onClose={() => setShowDialog(false)}>
+        <Dialog open={showSampleDialog} onClose={() => setShowSampleDialog(false)}>
           <DialogTitle>{selectedSample.sampleName}</DialogTitle>
           <DialogContent dividers>
-            <Typography>ID: {selectedSample.ID}</Typography>
-            <Typography>Date of Receipt: {selectedSample.dateOfReceipt}</Typography>
-            <Typography>Clexio Number: {selectedSample.clexioNumber}</Typography>
-            <Typography>Sample Name: {selectedSample.sampleName}</Typography>
-            <Typography>Number of Containers Received: {selectedSample.containers}</Typography>
-            <Typography>Tests Required: {selectedSample.testsRequired ? "Yes" : "No"}</Typography>
-            <Typography>Project Name: {selectedSample.projectName}</Typography>
-            <Typography>Received From: {selectedSample.receivedFrom}</Typography>
-            <Typography>Place of Storage: {selectedSample.storage}</Typography>
-            <Typography>Received By: {selectedSample.receivedBy}</Typography>
-            <Typography>Comment: {selectedSample.comment}</Typography>
-            <Typography>Tests Completion Date: {selectedSample.completionDate}</Typography>
-            <Typography>Completed By: {selectedSample.completedBy}</Typography>
+            {Object.entries(selectedSample).map(([key, value]) => (
+              <Typography key={key}><strong>{key}:</strong> {value}</Typography>
+            ))}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setShowDialog(false)} color="primary">Close</Button>
+            <Button onClick={() => setShowSampleDialog(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+      )}
+
+      {selectedStability && (
+        <Dialog open={showStabilityDialog} onClose={() => setShowStabilityDialog(false)}>
+          <DialogTitle>{selectedStability.stabilityName}</DialogTitle>
+          <DialogContent dividers>
+            {Object.entries(selectedStability).map(([key, value]) => (
+              <Typography key={key}><strong>{key}:</strong> {value}</Typography>
+            ))}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowStabilityDialog(false)}>Close</Button>
           </DialogActions>
         </Dialog>
       )}
