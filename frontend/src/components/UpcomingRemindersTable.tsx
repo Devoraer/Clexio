@@ -1,13 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Paper,
-  TableContainer,
-  Chip,
+  Table, TableHead, TableRow, TableCell, TableBody,
+  Paper, TableContainer, Chip
 } from "@mui/material";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -18,7 +12,8 @@ dayjs.extend(customParseFormat);
 interface AlertItem {
   type: "Material" | "Machine";
   name: string;
-  dueDate: string | any;
+  dueDate: string; // תאריך תפוגה או כיול
+  status: "Expiring Soon" | "Calibration Overdue" | "Calibration Due Soon";
 }
 
 const UpcomingRemindersTable = () => {
@@ -27,9 +22,10 @@ const UpcomingRemindersTable = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3000/api/alerts/comingSoon")
+      .get("http://localhost:3000/api/alerts/comingSoon") // 🔗 תוודאי שה־API הזה קיים!
       .then((res) => {
         setAlerts(res.data);
+        console.log("📦 Alerts received:", res.data);
         setLoading(false);
       })
       .catch((err) => {
@@ -38,81 +34,40 @@ const UpcomingRemindersTable = () => {
       });
   }, []);
 
-  const parseDate = (raw: any): dayjs.Dayjs | null => {
-    if (typeof raw === "string") {
-      const parsed = dayjs(raw, ["DD/MM/YYYY", "YYYY-MM-DD", "MM/DD/YYYY"], true);
-      return parsed.isValid() ? parsed : null;
-    }
-    if (typeof raw === "object" && raw?.seconds) {
-      return dayjs(new Date(raw.seconds * 1000));
-    }
-    return null;
+  const renderStatusChip = (status: AlertItem["status"]) => {
+    let color: "warning" | "error" | "info" = "info";
+    if (status === "Expiring Soon") color = "warning";
+    else if (status === "Calibration Overdue") color = "error";
+    else if (status === "Calibration Due Soon") color = "warning";
+
+    return <Chip label={status} color={color} />;
   };
 
-  const isExpiringSoon = (dueDate: any): boolean => {
-    const today = dayjs();
-    const due = parseDate(dueDate);
-    if (!due) return false;
-    const diff = due.diff(today, "day");
-    return diff >= 0 && diff <= 10;
-  };
-
-  const translateType = (type: string) => {
-    if (type === "Material") return "🧪 Material";
-    if (type === "Machine") return "🛠️ Machine";
-    return type;
-  };
-
-  // ✨ סינון חומרים שעומדים בתנאי
-  const filteredAlerts = alerts.filter(
-    (alert) => alert.type === "Material" && isExpiringSoon(alert.dueDate)
-  );
+  if (loading) return <p>⏳ Loading alerts...</p>;
 
   return (
-    <Paper elevation={3} sx={{ overflowX: "auto" }}>
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell><strong>Type</strong></TableCell>
-              <TableCell><strong>Name</strong></TableCell>
-              <TableCell><strong>Expiry Date</strong></TableCell>
-              <TableCell><strong>Status</strong></TableCell>
+    <TableContainer component={Paper}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>📦 סוג</TableCell>
+            <TableCell>🔤 שם</TableCell>
+            <TableCell>📅 תאריך</TableCell>
+            <TableCell>⚠️ סטטוס</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {alerts.map((item, index) => (
+            <TableRow key={index}>
+              <TableCell>{item.type}</TableCell>
+              <TableCell>{item.name}</TableCell>
+              <TableCell>{dayjs(item.dueDate).format("DD/MM/YYYY")}</TableCell>
+              <TableCell>{renderStatusChip(item.status)}</TableCell>
             </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center">
-                  Loading...
-                </TableCell>
-              </TableRow>
-            ) : filteredAlerts.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center">
-                  No expiring materials 🟢
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredAlerts.map((alert, index) => (
-                <TableRow key={index}>
-                  <TableCell>{translateType(alert.type)}</TableCell>
-                  <TableCell>{alert.name}</TableCell>
-                  <TableCell>{typeof alert.dueDate === "string" ? alert.dueDate : "Invalid Date"}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label="Expiring Soon"
-                      color="warning"
-                      sx={{ fontWeight: "bold" }}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Paper>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 };
 

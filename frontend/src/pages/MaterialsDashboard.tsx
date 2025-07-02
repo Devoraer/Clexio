@@ -105,21 +105,30 @@ const MaterialsDashboard = () => {
   const showDisabledList = findExpiredWithValidCopies(materials);
 
   const handleUpdateAmount = async (id: string, currentAmount: number) => {
-    const newAmountStr = updateAmounts[id];
-    const newAmount = parseFloat(newAmountStr);
-    if (isNaN(newAmount) || newAmount < 0) {
-      setErrors((prev) => ({ ...prev, [id]: "Enter a valid amount" }));
-      return;
-    }
-    try {
-      await axios.put(`http://localhost:3000/api/materials/${id}/amount`, { amount: newAmount });
-      setMaterials((prev) => prev.map((m) => (m.ID === id ? { ...m, amount: newAmount } : m)));
-      setUpdateAmounts((prev) => ({ ...prev, [id]: "" }));
-      setErrors((prev) => ({ ...prev, [id]: "" }));
-    } catch (err) {
-      console.error("❌ Update error:", err);
-    }
-  };
+  const newAmountStr = updateAmounts[id];
+  const newAmount = parseFloat(newAmountStr);
+
+  // 🛑 בדיקה שהמספר חוקי
+  if (isNaN(newAmount) || newAmount < 0) {
+    setErrors((prev) => ({ ...prev, [id]: "Enter a valid amount" }));
+    return;
+  }
+
+  // ❗ בדיקה שהוא קטן מהכמות הנוכחית
+  if (newAmount >= currentAmount) {
+    setErrors((prev) => ({ ...prev, [id]: `Must be less than ${currentAmount}` }));
+    return;
+  }
+
+  try {
+    await axios.put(`http://localhost:3000/api/materials/${id}/amount`, { amount: newAmount });
+    setMaterials((prev) => prev.map((m) => (m.ID === id ? { ...m, amount: newAmount } : m)));
+    setUpdateAmounts((prev) => ({ ...prev, [id]: "" }));
+    setErrors((prev) => ({ ...prev, [id]: "" }));
+  } catch (err) {
+    console.error("❌ Update error:", err);
+  }
+};
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) =>
@@ -141,7 +150,6 @@ const MaterialsDashboard = () => {
 
   return (
     <Box sx={{ padding: 4, backgroundColor: "#f5f7fb", width: "100vw", overflowX: "hidden", boxSizing: "border-box" }}>
-      <Typography variant="h4" gutterBottom>Materials Dashboard</Typography>
       <Typography variant="body1" sx={{ mb: 3 }}>
         Total materials loaded: {materials.length}
       </Typography>
@@ -168,14 +176,15 @@ const MaterialsDashboard = () => {
             </MenuItem>
           ))}
         </Menu>
-
         <TextField
+          label="Search materials..."
           variant="outlined"
+          size="small"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search materials..."
-          sx={{ flexGrow: 1, minWidth: "220px" }}
+          sx={{ width: 910 }}
         />
+    
       </Stack>
 
       <AddMaterialDialog open={open} onClose={() => setOpen(false)} onSuccess={fetchMaterials} />
@@ -209,16 +218,19 @@ const MaterialsDashboard = () => {
                 sx={{
                   borderRadius: 4,
                   boxShadow: 3,
-                  bgcolor: isDisabled ? "#e0e0e0" : "inherit",
+                  bgcolor: "#ffffff",
                   position: "relative",
+                  height: "100%", // ✅ חשוב
+                  display: "flex",
+                  flexDirection: "column",
                   ...(isDisabled && {
                     "&:hover": { cursor: "not-allowed" },
                   }),
                 }}
               >
-                <Box sx={isDisabled ? { pointerEvents: "none", opacity: 0.4 } : {}}>
-                  <CardContent>
-                    <Chip label={expiry.status} color={expiry.color as any} sx={{ mb: 1 }} />
+                <Box sx={isDisabled ? { pointerEvents: "none", opacity: 0.4 } : { height: "100%", display: "flex", flexDirection: "column" }}>
+                  <CardContent sx={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
+                    <Chip label={expiry.status} color={expiry.color as any} sx={{ mb: 1, width: 120,height: 24, justifyContent: "center" }} />
                     <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>
                       {material.name}
                     </Typography>
@@ -240,37 +252,46 @@ const MaterialsDashboard = () => {
                       </Box>
                     </Collapse>
 
-                    <Stack direction="row" spacing={1} alignItems="center" mt={2}>
-                      <TextField
-                        label="Amount"
-                        type="number"
-                        size="small"
-                        value={updateAmounts[material.ID] || ""}
-                        onChange={(e) =>
-                          setUpdateAmounts((prev) => ({ ...prev, [material.ID]: e.target.value }))
-                        }
-                        error={!!errors[material.ID]}
-                        helperText={errors[material.ID] || ""}
-                        sx={{ width: 90 }}
-                      />
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => handleUpdateAmount(material.ID, material.amount)}
-                      >
-                        Update
-                      </Button>
-                      <Button
-                        size="small"
-                        endIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                        onClick={() => toggleExpand(material.ID)}
-                      >
-                        Expand
-                      </Button>
-                    </Stack>
+                    {/* ✅ זה שומר את שורת הכפתורים בתחתית */}
+                    <Box sx={{ mt: "auto", pt: 2 }}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                       <TextField
+                          label="Amount"
+                          size="small"
+                          value={updateAmounts[material.ID] || ""}
+                          onChange={(e) =>
+                            setUpdateAmounts((prev) => ({ ...prev, [material.ID]: e.target.value }))
+                          }
+                          error={!!errors[material.ID]}
+                          helperText={errors[material.ID] || ""}
+                          FormHelperTextProps={{
+                            sx: { whiteSpace: "nowrap", fontSize: "0.75rem", marginLeft: 0 },
+                          }}
+                          sx={{ width: 90 }}
+                        />
+
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => handleUpdateAmount(material.ID, material.amount)}
+                        >
+                          Update
+                        </Button>
+
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          endIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                          onClick={() => toggleExpand(material.ID)}
+                        >
+                          Expand
+                        </Button>
+                      </Stack>
+                    </Box>
                   </CardContent>
                 </Box>
               </Card>
+
             </Tooltip>
           );
         })}

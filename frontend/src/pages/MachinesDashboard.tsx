@@ -17,14 +17,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper
+  IconButton
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
@@ -48,11 +41,6 @@ interface Machine {
   Location?: string;
   "Instrument type"?: string;
   "Calibrated by"?: string;
-  CalibrationHistory?: {
-    date: number;
-    interval: string;
-    updatedBy: string;
-  }[];
 }
 
 const parseDateSmart = (dateInput: any): dayjs.Dayjs | null => {
@@ -75,32 +63,6 @@ const parseDateSmart = (dateInput: any): dayjs.Dayjs | null => {
     if (parsed.isValid()) return parsed;
   }
   return null;
-};
-
-const formatDate = (input: any): string => {
-  if (!input) return "Invalid";
-  if (typeof input === "object" && typeof input.toDate === "function") {
-    const parsed = dayjs(input.toDate());
-    return parsed.isValid() ? parsed.format("DD/MM/YYYY") : "Invalid";
-  }
-  if (typeof input === "object" && "seconds" in input && "nanoseconds" in input) {
-    const ms = input.seconds * 1000 + Math.floor(input.nanoseconds / 1_000_000);
-    const parsed = dayjs(ms);
-    return parsed.isValid() ? parsed.format("DD/MM/YYYY") : "Invalid";
-  }
-  if (typeof input === "string") {
-    const cleaned = input.trim().replaceAll("-", "/").replaceAll(".", "/").replace(/\s+/g, "");
-    const formats = ["DD/MM/YYYY", "D/M/YYYY", "YYYY-MM-DD", "MMMM D, YYYY"];
-    for (const format of formats) {
-      const parsed = dayjs(cleaned, format, true);
-      if (parsed.isValid()) return parsed.format("DD/MM/YYYY");
-    }
-  }
-  if (typeof input === "number") {
-    const parsed = dayjs.unix(input);
-    return parsed.isValid() ? parsed.format("DD/MM/YYYY") : "Invalid";
-  }
-  return "Invalid";
 };
 
 const getCalibrationInfo = (calibrationDate: any, interval: string) => {
@@ -193,10 +155,12 @@ const MachinesDashboard = () => {
     .sort((a, b) => getPriority(a.calibrationInfo.chipLabel) - getPriority(b.calibrationInfo.chipLabel));
 
   return (
-    <Box p={3}>
-      <Typography variant="h4" mb={2}>Machines Dashboard</Typography>
+    <Box sx={{ padding: 4, backgroundColor: "#f5f7fb", width: "100vw", overflowX: "hidden", boxSizing: "border-box" }}>
+      <Typography variant="body1" sx={{ mb: 3 }}>
+        Total machines loaded: {machines.length}
+      </Typography>
 
-      <Box display="flex" gap={1} mb={2} alignItems="center" flexWrap="wrap">
+      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3, flexWrap: "wrap" }}>
         <Button variant="contained" onClick={() => setOpenAddDialog(true)}>+ ADD MACHINE</Button>
         <Button variant="outlined" startIcon={<FilterListIcon />} onClick={(e) => setAnchorEl(e.currentTarget)}>
           Filter
@@ -215,11 +179,22 @@ const MachinesDashboard = () => {
           size="small"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ width: "300px" }}
+          sx={{ width: 930 }}
         />
-      </Box>
+      </Stack>
 
-      <Box display="flex" flexWrap="wrap" gap={2.5}>
+      <Box
+        sx={{
+          display: "grid",
+          gap: 3,
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(2, 1fr)",
+            md: "repeat(3, 1fr)",
+            lg: "repeat(4, 1fr)",
+          },
+        }}
+      >
         {sortedMachines.map((machine) => {
           const { nextCalibration, chipLabel, chipColor } = machine.calibrationInfo;
 
@@ -232,14 +207,20 @@ const MachinesDashboard = () => {
           const calibrationDateStr = parseDateSmart(machine["Calibration Date"])?.format("DD/MM/YYYY") ?? "Invalid";
 
           return (
-            <Card key={machine.ID} sx={{
-              width: 270,
-              borderRadius: 3,
-              backgroundColor: "#fefefe",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              position: "relative",
-            }}>
-              <CardContent sx={{ px: 2, pt: 6, pb: 2 }}>
+           <Card
+              key={machine.ID}
+              sx={{
+                borderRadius: 4,
+                boxShadow: 3,
+                bgcolor: "#ffffff",
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                height: "100%",
+              }}
+            >
+              <CardContent sx={{ px: 2, pt: 6, pb: 2, flexGrow: 1 }}>
                 <Chip
                   label={chipLabel}
                   size="small"
@@ -254,79 +235,74 @@ const MachinesDashboard = () => {
                     fontWeight: "bold",
                     color: "white",
                     backgroundColor:
-                      chipColor === "success" ? "#2e7d32" :
-                      chipColor === "warning" ? "#ed6c02" :
-                      "#d32f2f",
+                      chipColor === "success"
+                        ? "#2e7d32"
+                        : chipColor === "warning"
+                        ? "#ed6c02"
+                        : "#d32f2f",
                   }}
                 />
 
                 <Typography variant="subtitle1" fontWeight="bold" color="primary">
                   {machine["Instrument ID"]}
                 </Typography>
+                <Typography variant="body2">
+                  Calibration Date: {calibrationDateStr}
+                </Typography>
+                <Typography variant="body2">
+                  Interval: {machine["Calibration interval"]}
+                </Typography>
+                <Typography variant="body2">
+                  Next Calibration: {nextCalibration}
+                </Typography>
 
-                <Typography variant="body2">Calibration Date: {calibrationDateStr}</Typography>
-                <Typography variant="body2">Interval: {machine["Calibration interval"]}</Typography>
-                <Typography variant="body2">Next Calibration: {nextCalibration}</Typography>
+                {/* 🧩 הפרטים הנוספים שנפתחים למעלה */}
+                <Collapse in={expandedCard === machine.ID}>
+                  <Box mt={1}>
+                    <Typography variant="body2">ID: {machine.ID}</Typography>
+                    <Typography variant="body2">
+                      Department: {machine.Department || "—"}
+                    </Typography>
+                    <Typography variant="body2">
+                      Location: {machine.Location || "—"}
+                    </Typography>
+                    <Typography variant="body2">
+                      Type: {machine["Instrument type"] || "—"}
+                    </Typography>
+                    <Typography variant="body2">
+                      Calibrated by: {machine["Calibrated by"] || "—"}
+                    </Typography>
+                  </Box>
+                </Collapse>
+              </CardContent>
 
-                <Stack direction="row" spacing={1} mt={2}>
+              {/* 🧷 הכפתורים תמיד בתחתית */}
+              <Box px={2} pb={2}>
+                <Stack direction="row" spacing={1}>
                   <Button
                     variant="outlined"
                     size="small"
                     disabled={!isUpdatable}
+                    sx={{ fontSize: '0.65rem' }}  
                     onClick={() => handleUpdateCalibration(machine)}
-                  >Update</Button>
+                  >
+                    Calibration Is Done
+                  </Button>
 
                   <Button
                     variant="outlined"
                     size="small"
-                    endIcon={expandedCard === machine.ID ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                    endIcon={
+                      expandedCard === machine.ID ? <ExpandLessIcon /> : <ExpandMoreIcon />
+                    }
                     onClick={() => toggleExpand(machine.ID)}
-                  >Expand</Button>
+                  >
+                    Expand
+                  </Button>
                 </Stack>
-
-                <Collapse in={expandedCard === machine.ID}>
-                  <Box mt={1}>
-                    <Typography variant="body2">ID: {machine.ID}</Typography>
-                    <Typography variant="body2">Department: {machine.Department || "—"}</Typography>
-                    <Typography variant="body2">Location: {machine.Location || "—"}</Typography>
-                    <Typography variant="body2">Type: {machine["Instrument type"] || "—"}</Typography>
-                    <Typography variant="body2">Calibrated by: {machine["Calibrated by"] || "—"}</Typography>
-
-                    <Box mt={2}>
-                      <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                        Calibration History:
-                      </Typography>
-                      <TableContainer component={Paper}>
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Date</TableCell>
-                              <TableCell>Interval</TableCell>
-                              <TableCell>Updated By</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {machine.CalibrationHistory && machine.CalibrationHistory.length > 0 ? (
-                              machine.CalibrationHistory.map((entry, idx) => (
-                                <TableRow key={idx}>
-                                  <TableCell>{formatDate(entry.date)}</TableCell>
-                                  <TableCell>{entry.interval || "—"}</TableCell>
-                                  <TableCell>{entry.updatedBy || "—"}</TableCell>
-                                </TableRow>
-                              ))
-                            ) : (
-                              <TableRow>
-                                <TableCell colSpan={3}>No history</TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    </Box>
-                  </Box>
-                </Collapse>
-              </CardContent>
+              </Box>
             </Card>
+
           );
         })}
       </Box>

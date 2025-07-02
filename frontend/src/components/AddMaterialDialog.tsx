@@ -252,7 +252,7 @@ const AddMaterialDialog = ({ open, onClose, onSuccess }: Props) => {
       <DialogActions>
         <Button onClick={handleClose}>Cancel</Button>
         <Button onClick={handleSave} variant="contained">
-          Save
+          ADD
         </Button>
       </DialogActions>
     </Dialog>

@@ -20,6 +20,7 @@ const samplesRouter = require("./samples");
 const machinesRouter = require("./machines");
 const stabilityChecklistRouter = require("./StabilityChecklistforsamples");
 const rawRouter = require("./raw");
+const alertsRouter = require("./alerts");
 
 // ✅ חיבור כל הראוטרים
 app.use("/api/materials", materialsRouter);

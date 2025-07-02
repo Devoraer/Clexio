@@ -1,3 +1,5 @@
+// 📁 HomePage.tsx
+
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -7,9 +9,9 @@ import {
   Typography,
   Chip,
   Stack,
-  TextField,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
 
 // 🧠 Icons
 import MedicationLiquidIcon from "@mui/icons-material/Science";
@@ -20,7 +22,6 @@ import MedicationIcon from "@mui/icons-material/Medication";
 // 🖼 אייקון ציוד מתמונה
 import MachineIcon from "../icones/machine.png";
 import UpcomingRemindersTable from "../components/UpcomingRemindersTable";
-
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -39,11 +40,33 @@ export default function HomePage() {
     overdue: 0,
   });
 
+  // ✅ חישוב Expiring Soon לפי תאריך – בלי status
   useEffect(() => {
-    fetch("http://localhost:3000/api/materials/summary")
+    fetch("http://localhost:3000/api/materials")
       .then((res) => res.json())
-      .then((data) => setMaterialStats(data))
-      .catch((err) => console.error("❌ Error fetching material summary:", err));
+      .then((data) => {
+        const now = dayjs();
+        const in30Days = now.add(30, "day");
+
+        const expiringSoon = data.filter((mat: any) => {
+          const raw = mat["Expiry Date"];
+          let expiry = null;
+
+          if (raw && typeof raw === "string") {
+            expiry = dayjs(raw, ["DD/MM/YYYY", "YYYY-MM-DD", "MM/DD/YYYY"]);
+          } else if (raw?.toDate) {
+            expiry = dayjs(raw.toDate());
+          }
+
+          return expiry && expiry.isValid() && expiry.isAfter(now) && expiry.isBefore(in30Days);
+        });
+
+        setMaterialStats({
+          total: data.length,
+          expiringSoon: expiringSoon.length,
+        });
+      })
+      .catch((err) => console.error("❌ Error fetching materials:", err));
   }, []);
 
   useEffect(() => {
@@ -192,7 +215,7 @@ export default function HomePage() {
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      {/* 📌 Sidebar */}
+      {/* Sidebar */}
       <Box
         sx={{
           width: 240,
@@ -222,38 +245,34 @@ export default function HomePage() {
         </CardActionArea>
       </Box>
 
-      {/* 📊 Main Dashboard */}
+      {/* Main Content */}
       <Box
         sx={{
           flexGrow: 1,
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
+          justifyContent: "flex-start",
           alignItems: "center",
           background: "#f4f7fb",
           p: 4,
         }}
       >
-        <Typography
-          variant="h4"
-          fontWeight={700}
-          mb={4}
-          sx={{
-            color: "#2c3e50",
-            background: "linear-gradient(to right, #2196f3, #21cbf3)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
-        >
-          Lab Dashboard
-        </Typography>
+        {/* טבלה למעלה */}
+        <Box mt={2} width="100%" maxWidth="900px">
+          <Typography variant="h5" mb={2} textAlign="center" color="primary">
+            🔔 Urgent Alerts
+          </Typography>
+          <UpcomingRemindersTable />
+        </Box>
 
+        {/* כרטיסים למטה */}
         <Box
           sx={{
             display: "flex",
             gap: 4,
             flexWrap: "wrap",
             justifyContent: "center",
+            mt: 25,
           }}
         >
           {cards.map((card, index) => (
@@ -288,18 +307,7 @@ export default function HomePage() {
             </Card>
           ))}
         </Box>
-      
-
-        {/* 📋 טבלת הדברים הקרובים */}
-        <Box mt={6} width="100%" maxWidth="900px">
-          <Typography variant="h5" mb={2} textAlign="center" color="primary">
-            🔔 Urgent Alerts
-          </Typography>
-          <UpcomingRemindersTable />
-        </Box>
-
       </Box>
     </Box>
-    
   );
 }

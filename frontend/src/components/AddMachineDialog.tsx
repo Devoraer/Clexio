@@ -87,16 +87,17 @@ const AddMachineDialog = ({ open, onClose, onSuccess }: Props) => {
   const handleSave = async () => {
     try {
       const payload = {
-        ID: formData.id,
-        calibrationDate: formData.calibrationDate,
-        instrumentId: formData.instrumentId,
-        calibrationInterval: formData.calibrationInterval,
-        department: formData.department,
-        location: formData.location,
-        instrumentType:
-          formData.instrumentType || `${formData.instrumentId} ${generateRandomSuffix()}`,
-        calibratedBy: formData.calibratedBy,
-      };
+      ID: formData.id,
+      "Calibration Date": formData.calibrationDate,
+      "Instrument ID": formData.instrumentId,
+      "Calibration interval": formData.calibrationInterval,
+      Department: formData.department,
+      Location: formData.location,
+      "Instrument type": formData.instrumentType || `${formData.instrumentId} ${generateRandomSuffix()}`,
+      "Calibrated by": formData.calibratedBy,
+    };
+
+
 
       await axios.post("http://localhost:3000/api/machines", payload);
       onSuccess();
@@ -109,78 +110,79 @@ const AddMachineDialog = ({ open, onClose, onSuccess }: Props) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>הוספת מכונה חדשה</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} mt={1}>
-          <TextField label="ID (Auto)" value={formData.id} disabled fullWidth />
-          <TextField
-            label="Calibration Date"
-            type="date"
-            value={formData.calibrationDate}
-            onChange={(e) =>
-              setFormData({ ...formData, calibrationDate: e.target.value })
-            }
-            fullWidth
-          />
-          <TextField
-            label="Instrument ID"
-            value={formData.instrumentId}
-            onChange={(e) => handleChange("instrumentId")(e, e.target.value)}
-            fullWidth
-          />
-          <Autocomplete
-            freeSolo
-            options={options.intervals}
-            value={formData.calibrationInterval}
-            onInputChange={handleChange("calibrationInterval")}
-            renderInput={(params) => (
-              <TextField {...params} label="Calibration Interval" fullWidth />
-            )}
-          />
-          <Autocomplete
-            freeSolo
-            options={options.departments}
-            value={formData.department}
-            onInputChange={handleChange("department")}
-            renderInput={(params) => (
-              <TextField {...params} label="Department" fullWidth />
-            )}
-          />
-          <Autocomplete
-            freeSolo
-            options={options.locations}
-            value={formData.location}
-            onInputChange={handleChange("location")}
-            renderInput={(params) => (
-              <TextField {...params} label="Location" fullWidth />
-            )}
-          />
-          <TextField
-            label="Instrument Type"
-            value={formData.instrumentType}
-            disabled
-            fullWidth
-          />
-          <Autocomplete
-            freeSolo
-            options={options.calibratedBy}
-            value={formData.calibratedBy}
-            onInputChange={handleChange("calibratedBy")}
-            renderInput={(params) => (
-              <TextField {...params} label="Calibrated By" fullWidth />
-            )}
-          />
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="inherit">
-          ביטול
-        </Button>
-        <Button onClick={handleSave} variant="contained">
-          שמור
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <DialogTitle>Add New Machine</DialogTitle>
+    <DialogContent>
+      <Stack spacing={2} mt={1}>
+        <TextField label="ID (Auto)" value={formData.id} disabled fullWidth />
+        <TextField
+          label="Calibration Date"
+          type="date"
+          value={formData.calibrationDate}
+          onChange={(e) =>
+            setFormData({ ...formData, calibrationDate: e.target.value })
+          }
+          fullWidth
+        />
+        <TextField
+          label="Instrument ID"
+          value={formData.instrumentId}
+          onChange={(e) => handleChange("instrumentId")(e, e.target.value)}
+          fullWidth
+        />
+        <Autocomplete
+          freeSolo
+          options={options.intervals}
+          value={formData.calibrationInterval}
+          onInputChange={handleChange("calibrationInterval")}
+          renderInput={(params) => (
+            <TextField {...params} label="Calibration Interval" fullWidth />
+          )}
+        />
+        <Autocomplete
+          freeSolo
+          options={options.departments}
+          value={formData.department}
+          onInputChange={handleChange("department")}
+          renderInput={(params) => (
+            <TextField {...params} label="Department" fullWidth />
+          )}
+        />
+        <Autocomplete
+          freeSolo
+          options={options.locations}
+          value={formData.location}
+          onInputChange={handleChange("location")}
+          renderInput={(params) => (
+            <TextField {...params} label="Location" fullWidth />
+          )}
+        />
+        <TextField
+          label="Instrument Type"
+          value={formData.instrumentType}
+          disabled
+          fullWidth
+        />
+        <Autocomplete
+          freeSolo
+          options={options.calibratedBy}
+          value={formData.calibratedBy}
+          onInputChange={handleChange("calibratedBy")}
+          renderInput={(params) => (
+            <TextField {...params} label="Calibrated By" fullWidth />
+          )}
+        />
+      </Stack>
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={onClose} color="inherit">
+        CANCLE
+      </Button>
+      <Button onClick={handleSave} variant="contained">
+        ADD
+      </Button>
+    </DialogActions>
+  </Dialog>
+
   );
 };
 
