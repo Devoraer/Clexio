@@ -1,15 +1,10 @@
-import { useNavigate } from "react-router-dom";
-import {
-  Box,
-  Paper,
-  Typography,
-  Button,
-} from "@mui/material";
+// src/pages/FrontDashboard.tsx
 
+import { useNavigate } from "react-router-dom";
+import { Box, Paper, Typography, Button } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import ScienceIcon from "@mui/icons-material/Science";
 import BuildIcon from "@mui/icons-material/Build";
-
 import Sidebar from "../components/Sidebar";
 import DashboardHeader from "../components/DashboardHeader";
 import { useEffect, useState } from "react";
@@ -17,12 +12,24 @@ import { useEffect, useState } from "react";
 export default function FrontDashboard() {
   const navigate = useNavigate();
   const [machinesCount, setMachinesCount] = useState(0);
+  const [samplesCount, setSamplesCount] = useState(0);
+  const [materialsCount, setMaterialsCount] = useState(0);
 
   useEffect(() => {
     fetch("http://localhost:3000/api/machines")
       .then((res) => res.json())
       .then((data) => setMachinesCount(data.length))
       .catch((err) => console.error("שגיאה בשליפת מכשירים:", err));
+
+    fetch("http://localhost:3000/api/samples")
+      .then((res) => res.json())
+      .then((data) => setSamplesCount(data.length))
+      .catch((err) => console.error("שגיאה בשליפת דגימות:", err));
+
+    fetch("http://localhost:3000/api/materials")
+      .then((res) => res.json())
+      .then((data) => setMaterialsCount(data.length))
+      .catch((err) => console.error("שגיאה בשליפת חומרים:", err));
   }, []);
 
   return (
@@ -52,7 +59,6 @@ export default function FrontDashboard() {
               </Typography>
               <Box mt={2}>
                 <Typography>סה"כ מכשירים: {machinesCount}</Typography>
-                <Typography>פעילים: ?</Typography>
               </Box>
               <Button
                 variant="contained"
@@ -76,8 +82,7 @@ export default function FrontDashboard() {
                 מעקב אחר הדגימות ותהליכי הבדיקה שלהן
               </Typography>
               <Box mt={2}>
-                <Typography>סה"כ דגימות: 12</Typography>
-                <Typography>בבדיקה: 3</Typography>
+                <Typography>סה"כ דגימות: {samplesCount}</Typography>
               </Box>
               <Button
                 variant="contained"
@@ -101,8 +106,7 @@ export default function FrontDashboard() {
                 ניהול מלאי חומרי הגלם וחומצות המעבדה
               </Typography>
               <Box mt={2}>
-                <Typography>סה"כ חומרים: 24</Typography>
-                <Typography>חסרים: 2</Typography>
+                <Typography>סה"כ חומרים: {materialsCount}</Typography>
               </Box>
               <Button
                 variant="contained"

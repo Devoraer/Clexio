@@ -1,4 +1,4 @@
-// 📁 backend/machines.js
+//machine.js
 const express = require("express");
 const { db } = require("./firebase");
 const admin = require("firebase-admin");
@@ -7,7 +7,6 @@ const dayjs = require("dayjs");
 const machinesRouter = express.Router();
 const collectionName = "Machines";
 
-// ✅ שליפת ID חדש מ־IdCounters/MachinesId
 machinesRouter.get("/next-id", async (req, res) => {
   try {
     const counterRef = db.collection("IdCounters").doc("MachinesId");
@@ -15,51 +14,55 @@ machinesRouter.get("/next-id", async (req, res) => {
     const currentId = counterDoc.exists ? counterDoc.data().nextId : 1;
     res.status(200).send(currentId.toString());
   } catch (err) {
-    console.error("❌ Failed to fetch next ID:", err);
+    console.error("Failed to fetch next ID:", err);
     res.status(500).send({ error: "Failed to get next machine ID" });
   }
 });
 
-// 🔍 GET /all – מחזיר את כל המכונות עם תאריכים בפורמט קריא
 machinesRouter.get("/all", async (req, res) => {
   try {
     const snapshot = await db.collection(collectionName).get();
     const result = snapshot.docs.map((doc) => {
       const data = doc.data();
+
+      const calibrationDateFormatted = (() => {
+        const raw = data["Calibration Date"];
+        if (typeof raw === "object" && typeof raw.toDate === "function") {
+          return dayjs(raw.toDate()).format("DD/MM/YYYY");
+        } else if (typeof raw === "string") {
+          const parsed = dayjs(raw, ["DD/MM/YYYY", "D/M/YYYY", "YYYY-MM-DD"], true);
+          return parsed.isValid() ? parsed.format("DD/MM/YYYY") : "Invalid";
+        }
+        return "Invalid";
+      })();
+
+      const nextCalibrationFormatted = (() => {
+        const raw = data["Next Calibration"];
+        if (raw && typeof raw.toDate === "function") {
+          return dayjs(raw.toDate()).format("DD/MM/YYYY");
+        } else if (typeof raw === "string") {
+          const parsed = dayjs(raw, ["DD/MM/YYYY", "D/M/YYYY", "YYYY-MM-DD"], true);
+          return parsed.isValid() ? parsed.format("DD/MM/YYYY") : raw;
+        }
+        return "Invalid";
+      })();
+
       return {
         ID: doc.id,
         ...data,
-        "Calibration Date": (() => {
-          const raw = data["Calibration Date"];
-          if (typeof raw === "object" && typeof raw.toDate === "function") {
-            return dayjs(raw.toDate()).format("DD/MM/YYYY");
-          } else if (typeof raw === "string") {
-            const parsed = dayjs(raw, ["DD/MM/YYYY", "D/M/YYYY", "YYYY-MM-DD"], true);
-            return parsed.isValid() ? parsed.format("DD/MM/YYYY") : "Invalid";
-          }
-          return "Invalid";
-        })(),
-        "Next Calibration": (() => {
-          const raw = data["Next Calibration"];
-          if (raw && typeof raw.toDate === "function") {
-            return dayjs(raw.toDate()).format("DD/MM/YYYY");
-          } else if (typeof raw === "string") {
-            const parsed = dayjs(raw, ["DD/MM/YYYY", "D/M/YYYY", "YYYY-MM-DD"], true);
-            return parsed.isValid() ? parsed.format("DD/MM/YYYY") : raw;
-          }
-          return "Invalid";
-        })(),
+        "Calibration Date": calibrationDateFormatted,
+        "Next Calibration": nextCalibrationFormatted,
+        CalibrationHistory: data.CalibrationHistory || [],
       };
     });
 
     res.status(result.length ? 200 : 204).send(result);
   } catch (error) {
-    console.error("❌ Failed to fetch machines:", error);
+    console.error("Failed to fetch machines:", error);
     res.status(500).send({ error: "Failed to fetch machines" });
   }
 });
 
-// 🔍 GET /info/:id – שליפת מכונה בודדת
 machinesRouter.get("/info/:id", async (req, res) => {
   const { id } = req.params;
   const result = await db.collection(collectionName).doc(id).get();
@@ -69,7 +72,6 @@ machinesRouter.get("/info/:id", async (req, res) => {
   else res.status(204).send();
 });
 
-// 📊 GET /summary – מחשב כמה מכונות בתוקף וכמה באיחור
 machinesRouter.get("/summary", async (req, res) => {
   try {
     const snapshot = await db.collection(collectionName).get();
@@ -106,12 +108,11 @@ machinesRouter.get("/summary", async (req, res) => {
 
     res.status(200).send({ total, overdue });
   } catch (error) {
-    console.error("❌ Error in /summary:", error);
+    console.error("Error in /summary:", error);
     res.status(500).send({ error: "Failed to calculate summary" });
   }
 });
 
-// ✅ PUT /:id – עדכון מכונה קיימת
 machinesRouter.put("/:id", async (req, res) => {
   const { id } = req.params;
   const body = req.body;
@@ -127,9 +128,7 @@ machinesRouter.put("/:id", async (req, res) => {
     const docData = existing.data();
     const newDate = body["Calibration Date"] || body.calibrationDate;
     const newInterval =
-      body["Calibration interval"] ||
-      body.calibrationInterval ||
-      docData["Calibration interval"];
+      body["Calibration interval"] || body.calibrationInterval || docData["Calibration interval"];
     const newNextCalibration = body["Next Calibration"] || body.nextCalibration;
 
     const updatedData = {};
@@ -156,32 +155,31 @@ machinesRouter.put("/:id", async (req, res) => {
       }
     }
 
-    const updateHistory = docData.updateHistory || [];
-    updateHistory.push({
-      date: docData["Calibration Date"] || newDate,
-      interval: docData["Calibration interval"] || newInterval,
+    const CalibrationHistory = docData.CalibrationHistory || [];
+    CalibrationHistory.push({
+      date: admin.firestore.Timestamp.now(),
+      interval: newInterval,
       updatedBy: body.updatedBy || "System",
       timestamp: dayjs().unix(),
     });
 
-    updatedData.updateHistory = updateHistory;
+    updatedData.CalibrationHistory = CalibrationHistory;
 
     await docRef.update(updatedData);
     res.status(200).send({
-      message: `✅ Machine with ID ${id} updated successfully`,
+      message: `Machine with ID ${id} updated successfully`,
       data: updatedData,
     });
   } catch (error) {
-    console.error("❌ Error updating machine:", error);
+    console.error("Error updating machine:", error);
     res.status(500).send({ error: "Failed to update machine" });
   }
 });
 
-// ✅ POST / – יצירת מכונה חדשה
 machinesRouter.post("/", async (req, res) => {
   try {
     const machine = req.body;
-    const id = String(machine.ID); // ✅ להבטיח מחרוזת
+    const id = String(machine.ID);
 
     if (!id || !machine["Instrument ID"] || !machine["Calibration interval"]) {
       return res.status(400).send({ error: "Missing required fields" });
@@ -199,7 +197,7 @@ machinesRouter.post("/", async (req, res) => {
       typeof calibrationDate === "object" &&
       typeof calibrationDate.toDate === "function"
     ) {
-      // Timestamp כבר תקין
+      // Valid timestamp
     } else {
       return res.status(400).send({ error: "Calibration Date is missing or invalid" });
     }
@@ -218,19 +216,27 @@ machinesRouter.post("/", async (req, res) => {
       "Calibration Date": calibrationDate,
       "Next Calibration": nextCalibration,
       createdAt: admin.firestore.Timestamp.now(),
+      CalibrationHistory: [
+        {
+          date: calibrationDate,
+          interval: machine["Calibration interval"],
+          updatedBy: machine.updatedBy || "System",
+          timestamp: dayjs().unix(),
+        },
+      ],
     };
 
-    console.log("📤 Saving new machine:", newMachine);
-
     await db.collection(collectionName).doc(id).set(newMachine);
-
     await db.collection("IdCounters").doc("MachinesId").update({
       nextId: admin.firestore.FieldValue.increment(1),
     });
 
-    res.status(201).send({ message: `✅ Machine ${id} created successfully`, machine: newMachine });
+    res.status(201).send({
+      message: `Machine ${id} created successfully`,
+      machine: newMachine,
+    });
   } catch (err) {
-    console.error("❌ Failed to add machine:", err);
+    console.error("Failed to add machine:", err);
     res.status(500).send({ error: "Failed to add machine" });
   }
 });

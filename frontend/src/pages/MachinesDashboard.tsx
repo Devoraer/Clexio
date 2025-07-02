@@ -18,6 +18,13 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
@@ -39,45 +46,61 @@ interface Machine {
   "Next Calibration"?: string;
   Department?: string;
   Location?: string;
-  "Instrument Type"?: string;
-  "Calibrated By"?: string;
+  "Instrument type"?: string;
+  "Calibrated by"?: string;
+  CalibrationHistory?: {
+    date: number;
+    interval: string;
+    updatedBy: string;
+  }[];
 }
 
 const parseDateSmart = (dateInput: any): dayjs.Dayjs | null => {
   if (!dateInput) return null;
-
   if (typeof dateInput === "object") {
     if ("seconds" in dateInput && "nanoseconds" in dateInput) {
       const ms = dateInput.seconds * 1000 + Math.floor(dateInput.nanoseconds / 1_000_000);
       const parsed = dayjs(ms);
       return parsed.isValid() ? parsed : null;
     }
-
     if (typeof dateInput.toDate === "function") {
       const parsed = dayjs(dateInput.toDate());
       return parsed.isValid() ? parsed : null;
     }
   }
-
-  const cleaned = String(dateInput)
-    .trim()
-    .replaceAll('"', "")
-    .replaceAll("-", "/")
-    .replaceAll(".", "/")
-    .replace(/\s+/g, "");
-
-  const formatsToTry = [
-    "DD/MM/YYYY", "D/M/YYYY",
-    "DD-MM-YYYY", "D-M-YYYY",
-    "DD.MM.YYYY", "D.M.YYYY"
-  ];
-
+  const cleaned = String(dateInput).trim().replaceAll("-", "/").replaceAll(".", "/").replace(/\s+/g, "");
+  const formatsToTry = ["DD/MM/YYYY", "D/M/YYYY", "YYYY-MM-DD"];
   for (const format of formatsToTry) {
     const parsed = dayjs(cleaned, format, true);
     if (parsed.isValid()) return parsed;
   }
-
   return null;
+};
+
+const formatDate = (input: any): string => {
+  if (!input) return "Invalid";
+  if (typeof input === "object" && typeof input.toDate === "function") {
+    const parsed = dayjs(input.toDate());
+    return parsed.isValid() ? parsed.format("DD/MM/YYYY") : "Invalid";
+  }
+  if (typeof input === "object" && "seconds" in input && "nanoseconds" in input) {
+    const ms = input.seconds * 1000 + Math.floor(input.nanoseconds / 1_000_000);
+    const parsed = dayjs(ms);
+    return parsed.isValid() ? parsed.format("DD/MM/YYYY") : "Invalid";
+  }
+  if (typeof input === "string") {
+    const cleaned = input.trim().replaceAll("-", "/").replaceAll(".", "/").replace(/\s+/g, "");
+    const formats = ["DD/MM/YYYY", "D/M/YYYY", "YYYY-MM-DD", "MMMM D, YYYY"];
+    for (const format of formats) {
+      const parsed = dayjs(cleaned, format, true);
+      if (parsed.isValid()) return parsed.format("DD/MM/YYYY");
+    }
+  }
+  if (typeof input === "number") {
+    const parsed = dayjs.unix(input);
+    return parsed.isValid() ? parsed.format("DD/MM/YYYY") : "Invalid";
+  }
+  return "Invalid";
 };
 
 const getCalibrationInfo = (calibrationDate: any, interval: string) => {
@@ -89,7 +112,6 @@ const getCalibrationInfo = (calibrationDate: any, interval: string) => {
       chipColor: "error" as const,
     };
   }
-
   const intervalMonths = parseInt(interval.toLowerCase().replace("m", ""));
   const nextDate = baseDate.add(intervalMonths, "month");
   const today = dayjs().startOf("day");
@@ -145,9 +167,7 @@ const MachinesDashboard = () => {
   const handleUpdateCalibration = async (machine: Machine) => {
     try {
       const today = dayjs();
-      const intervalMonths = parseInt(
-        machine["Calibration interval"].toLowerCase().replace("m", "")
-      );
+      const intervalMonths = parseInt(machine["Calibration interval"].toLowerCase().replace("m", ""));
       const nextCalibration = today.add(intervalMonths, "month");
 
       const payload = {
@@ -156,14 +176,9 @@ const MachinesDashboard = () => {
         "Calibration interval": machine["Calibration interval"],
       };
 
-      await axios.put(
-        `http://localhost:3000/api/machines/${machine.ID}`,
-        payload
-      );
-
+      await axios.put(`http://localhost:3000/api/machines/${machine.ID}`, payload);
       setOpenSuccessDialog(true);
       await fetchMachines();
-
     } catch (error) {
       console.error("Update failed:", error);
       alert("Failed to update calibration.");
@@ -182,24 +197,16 @@ const MachinesDashboard = () => {
       <Typography variant="h4" mb={2}>Machines Dashboard</Typography>
 
       <Box display="flex" gap={1} mb={2} alignItems="center" flexWrap="wrap">
-        <Button variant="contained" onClick={() => setOpenAddDialog(true)}>
-          + ADD MACHINE
+        <Button variant="contained" onClick={() => setOpenAddDialog(true)}>+ ADD MACHINE</Button>
+        <Button variant="outlined" startIcon={<FilterListIcon />} onClick={(e) => setAnchorEl(e.currentTarget)}>
+          Filter
         </Button>
-        <Button
-          variant="outlined"
-          startIcon={<FilterListIcon />}
-          onClick={(e) => setAnchorEl(e.currentTarget)}
-        >Filter</Button>
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
           {["All", "Calibrated Recently", "Calibration Due Soon", "Calibration Overdue"].map((option) => (
-            <MenuItem
-              key={option}
-              selected={filter === option}
-              onClick={() => {
-                setFilter(option);
-                setAnchorEl(null);
-              }}
-            >{option}</MenuItem>
+            <MenuItem key={option} selected={filter === option} onClick={() => {
+              setFilter(option);
+              setAnchorEl(null);
+            }}>{option}</MenuItem>
           ))}
         </Menu>
         <TextField
@@ -214,11 +221,7 @@ const MachinesDashboard = () => {
 
       <Box display="flex" flexWrap="wrap" gap={2.5}>
         {sortedMachines.map((machine) => {
-          const {
-            nextCalibration,
-            chipLabel,
-            chipColor,
-          } = machine.calibrationInfo;
+          const { nextCalibration, chipLabel, chipColor } = machine.calibrationInfo;
 
           if (
             (filter !== "All" && chipLabel !== filter) ||
@@ -261,15 +264,9 @@ const MachinesDashboard = () => {
                   {machine["Instrument ID"]}
                 </Typography>
 
-                <Typography variant="body2">
-                  Calibration Date: {calibrationDateStr}
-                </Typography>
-                <Typography variant="body2">
-                  Interval: {machine["Calibration interval"]}
-                </Typography>
-                <Typography variant="body2">
-                  Next Calibration: {nextCalibration}
-                </Typography>
+                <Typography variant="body2">Calibration Date: {calibrationDateStr}</Typography>
+                <Typography variant="body2">Interval: {machine["Calibration interval"]}</Typography>
+                <Typography variant="body2">Next Calibration: {nextCalibration}</Typography>
 
                 <Stack direction="row" spacing={1} mt={2}>
                   <Button
@@ -282,15 +279,6 @@ const MachinesDashboard = () => {
                   <Button
                     variant="outlined"
                     size="small"
-                    sx={{
-                      color: "#1976d2",
-                      borderColor: "#1976d2",
-                      fontWeight: 600,
-                      '&:hover': {
-                        backgroundColor: '#e3f2fd',
-                        borderColor: '#1565c0',
-                      }
-                    }}
                     endIcon={expandedCard === machine.ID ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                     onClick={() => toggleExpand(machine.ID)}
                   >Expand</Button>
@@ -301,8 +289,40 @@ const MachinesDashboard = () => {
                     <Typography variant="body2">ID: {machine.ID}</Typography>
                     <Typography variant="body2">Department: {machine.Department || "—"}</Typography>
                     <Typography variant="body2">Location: {machine.Location || "—"}</Typography>
-                    <Typography variant="body2">Type: {machine["Instrument Type"] || "—"}</Typography>
-                    <Typography variant="body2">Calibrated by: {machine["Calibrated By"] || "—"}</Typography>
+                    <Typography variant="body2">Type: {machine["Instrument type"] || "—"}</Typography>
+                    <Typography variant="body2">Calibrated by: {machine["Calibrated by"] || "—"}</Typography>
+
+                    <Box mt={2}>
+                      <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                        Calibration History:
+                      </Typography>
+                      <TableContainer component={Paper}>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Date</TableCell>
+                              <TableCell>Interval</TableCell>
+                              <TableCell>Updated By</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {machine.CalibrationHistory && machine.CalibrationHistory.length > 0 ? (
+                              machine.CalibrationHistory.map((entry, idx) => (
+                                <TableRow key={idx}>
+                                  <TableCell>{formatDate(entry.date)}</TableCell>
+                                  <TableCell>{entry.interval || "—"}</TableCell>
+                                  <TableCell>{entry.updatedBy || "—"}</TableCell>
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={3}>No history</TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Box>
                   </Box>
                 </Collapse>
               </CardContent>
@@ -333,7 +353,7 @@ const MachinesDashboard = () => {
               },
             }}
           >
-            Close
+            <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
         <DialogContent>

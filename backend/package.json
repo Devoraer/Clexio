@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "server": "nodemon index.js"
+    "server": "nodemon index.js",
+    "dev": "node index.js",
+    "add_history": "node addCalibrationHistory.js"
   },
   "author": "",
   "license": "ISC",

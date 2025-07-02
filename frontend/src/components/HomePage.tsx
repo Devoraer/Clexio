@@ -19,6 +19,8 @@ import MedicationIcon from "@mui/icons-material/Medication";
 
 // 🖼️ אייקון ציוד מתמונה
 import MachineIcon from "../icones/machine.png";
+import UpcomingRemindersTable from "../components/UpcomingRemindersTable";
+
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -286,7 +288,18 @@ export default function HomePage() {
             </Card>
           ))}
         </Box>
+      
+
+        {/* 📋 טבלת הדברים הקרובים */}
+        <Box mt={6} width="100%" maxWidth="900px">
+          <Typography variant="h5" mb={2} textAlign="center" color="primary">
+            🔔 Urgent Alerts
+          </Typography>
+          <UpcomingRemindersTable />
+        </Box>
+
       </Box>
     </Box>
+    
   );
 }

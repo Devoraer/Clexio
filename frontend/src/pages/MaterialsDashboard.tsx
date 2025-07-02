@@ -1,4 +1,4 @@
-// ✅ MaterialsDashboard.tsx – כולל שדות מורחבים בתוך Collapse
+// ✅ MaterialsDashboard.tsx – with tooltip message on disabled expired cards
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -12,13 +12,14 @@ import {
   Stack,
   Menu,
   MenuItem,
+  Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import AddMaterial from "../components/AddMaterial";
 import axios from "axios";
+import AddMaterialDialog from "../components/AddMaterialDialog";
 
 interface Material {
   ID: string;
@@ -87,6 +88,22 @@ const MaterialsDashboard = () => {
     }
   };
 
+  const findExpiredWithValidCopies = (list: Material[]) => {
+    const grouped: { [name: string]: { valid: boolean; expired: boolean } } = {};
+    for (const mat of list) {
+      const status = checkExpiryStatus(mat.expirationDate).status;
+      const name = mat.name;
+      if (!grouped[name]) grouped[name] = { valid: false, expired: false };
+      if (status === "Valid" || status === "Expiring Soon") grouped[name].valid = true;
+      if (status === "Expired") grouped[name].expired = true;
+    }
+    return Object.entries(grouped)
+      .filter(([_, val]) => val.valid && val.expired)
+      .map(([name]) => name);
+  };
+
+  const showDisabledList = findExpiredWithValidCopies(materials);
+
   const handleUpdateAmount = async (id: string, currentAmount: number) => {
     const newAmountStr = updateAmounts[id];
     const newAmount = parseFloat(newAmountStr);
@@ -95,9 +112,7 @@ const MaterialsDashboard = () => {
       return;
     }
     try {
-      await axios.put(`http://localhost:3000/api/materials/${id}/amount`, {
-        amount: newAmount,
-      });
+      await axios.put(`http://localhost:3000/api/materials/${id}/amount`, { amount: newAmount });
       setMaterials((prev) => prev.map((m) => (m.ID === id ? { ...m, amount: newAmount } : m)));
       setUpdateAmounts((prev) => ({ ...prev, [id]: "" }));
       setErrors((prev) => ({ ...prev, [id]: "" }));
@@ -125,10 +140,8 @@ const MaterialsDashboard = () => {
     });
 
   return (
-    <Box sx={{ padding: 4, backgroundColor: "#f5f7fb", width: "100%", boxSizing: "border-box" }}>
-      <Typography variant="h4" gutterBottom>
-        Materials Dashboard
-      </Typography>
+    <Box sx={{ padding: 4, backgroundColor: "#f5f7fb", width: "100vw", overflowX: "hidden", boxSizing: "border-box" }}>
+      <Typography variant="h4" gutterBottom>Materials Dashboard</Typography>
       <Typography variant="body1" sx={{ mb: 3 }}>
         Total materials loaded: {materials.length}
       </Typography>
@@ -165,6 +178,8 @@ const MaterialsDashboard = () => {
         />
       </Stack>
 
+      <AddMaterialDialog open={open} onClose={() => setOpen(false)} onSuccess={fetchMaterials} />
+
       <Box
         sx={{
           display: "grid",
@@ -180,66 +195,86 @@ const MaterialsDashboard = () => {
         {filteredMaterials.map((material) => {
           const expiry = checkExpiryStatus(material.expirationDate);
           const isExpanded = expandedIds.includes(material.ID);
+          const isDisabled = expiry.status === "Expired" && showDisabledList.includes(material.name);
+
           return (
-            <Card key={material.ID} sx={{ borderRadius: 4, boxShadow: 3 }}>
-              <CardContent>
-                <Chip label={expiry.status} color={expiry.color as any} sx={{ mb: 1 }} />
-                <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>
-                  {material.name}
-                </Typography>
-                <Typography>ID: {material.ID}</Typography>
-                <Typography>
-                  Amount: {material.amount} {material.unit}
-                </Typography>
-                <Typography>Expiry Date: {material.expirationDate}</Typography>
+            <Tooltip
+              key={material.ID}
+              title={isDisabled ? "A valid copy of this material exists. No need to use expired version." : ""}
+              arrow
+              placement="top"
+              disableHoverListener={!isDisabled}
+            >
+              <Card
+                sx={{
+                  borderRadius: 4,
+                  boxShadow: 3,
+                  bgcolor: isDisabled ? "#e0e0e0" : "inherit",
+                  position: "relative",
+                  ...(isDisabled && {
+                    "&:hover": { cursor: "not-allowed" },
+                  }),
+                }}
+              >
+                <Box sx={isDisabled ? { pointerEvents: "none", opacity: 0.4 } : {}}>
+                  <CardContent>
+                    <Chip label={expiry.status} color={expiry.color as any} sx={{ mb: 1 }} />
+                    <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>
+                      {material.name}
+                    </Typography>
+                    <Typography>ID: {material.ID}</Typography>
+                    <Typography>
+                      Amount: {material.amount} {material.unit}
+                    </Typography>
+                    <Typography>Expiry Date: {material.expirationDate}</Typography>
 
-                <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                  <Box mt={2}>
-                    {material.location && <Typography>Location: {material.location}</Typography>}
-                    {material.lot && <Typography>Lot: {material.lot}</Typography>}
-                    {material.vendor && <Typography>Vendor: {material.vendor}</Typography>}
-                    {material.casNumber && <Typography>CAS Number: {material.casNumber}</Typography>}
-                    {material.msds && <Typography>MSDS: {material.msds}</Typography>}
-                    {material.coa && <Typography>CoA: {material.coa}</Typography>}
-                    <Typography>No: {material.classification}</Typography>
-                  </Box>
-                </Collapse>
+                    <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                      <Box mt={2}>
+                        {material.location && <Typography>Location: {material.location}</Typography>}
+                        {material.lot && <Typography>Lot: {material.lot}</Typography>}
+                        {material.vendor && <Typography>Vendor: {material.vendor}</Typography>}
+                        {material.casNumber && <Typography>CAS Number: {material.casNumber}</Typography>}
+                        {material.msds && <Typography>MSDS: {material.msds}</Typography>}
+                        {material.coa && <Typography>CoA: {material.coa}</Typography>}
+                        <Typography>No: {material.classification}</Typography>
+                      </Box>
+                    </Collapse>
 
-                <Stack direction="row" spacing={1} alignItems="center" mt={2}>
-                  <TextField
-                    label="Amount"
-                    type="number"
-                    size="small"
-                    value={updateAmounts[material.ID] || ""}
-                    onChange={(e) =>
-                      setUpdateAmounts((prev) => ({ ...prev, [material.ID]: e.target.value }))
-                    }
-                    error={!!errors[material.ID]}
-                    helperText={errors[material.ID] || ""}
-                    sx={{ width: 90 }}
-                  />
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => handleUpdateAmount(material.ID, material.amount)}
-                  >
-                    Update
-                  </Button>
-                  <Button
-                    size="small"
-                    endIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                    onClick={() => toggleExpand(material.ID)}
-                  >
-                    Expand
-                  </Button>
-                </Stack>
-              </CardContent>
-            </Card>
+                    <Stack direction="row" spacing={1} alignItems="center" mt={2}>
+                      <TextField
+                        label="Amount"
+                        type="number"
+                        size="small"
+                        value={updateAmounts[material.ID] || ""}
+                        onChange={(e) =>
+                          setUpdateAmounts((prev) => ({ ...prev, [material.ID]: e.target.value }))
+                        }
+                        error={!!errors[material.ID]}
+                        helperText={errors[material.ID] || ""}
+                        sx={{ width: 90 }}
+                      />
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleUpdateAmount(material.ID, material.amount)}
+                      >
+                        Update
+                      </Button>
+                      <Button
+                        size="small"
+                        endIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        onClick={() => toggleExpand(material.ID)}
+                      >
+                        Expand
+                      </Button>
+                    </Stack>
+                  </CardContent>
+                </Box>
+              </Card>
+            </Tooltip>
           );
         })}
       </Box>
-
-      <AddMaterial onMaterialAdded={fetchMaterials} />
     </Box>
   );
 };

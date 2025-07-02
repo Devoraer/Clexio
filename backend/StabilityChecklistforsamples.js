@@ -2,7 +2,7 @@
 
 const express = require("express");
 const router = express.Router();
-const { db } = require("../firebase");
+const { db } = require("./firebase");
 
 // 🔸 POST: הוספת Stability Checklist חדשה
 router.post("/add", async (req, res) => {

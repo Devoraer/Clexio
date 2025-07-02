@@ -1,47 +1,38 @@
 // 📁 backend/materials.js
+
 const express = require("express");
 const router = express.Router();
 const { db } = require("./firebase");
 const fs = require("fs");
 const path = require("path");
 
-// 🧮 פונקציה שמביאה את הערך הנוכחי ומגדילה אותו
+// ✅ שליפת ID חדש מתוך IdCounters/MaterialsId (ומיד עדכון הבא)
 const getNextId = async () => {
-  const counterRef = db.collection("Meta").doc("idCounter");
+  const counterRef = db.collection("IdCounters").doc("MaterialsId");
   const result = await db.runTransaction(async (t) => {
     const doc = await t.get(counterRef);
-    const current = doc.exists ? doc.data().value : 1000;
+    const current = doc.exists ? doc.data().nextId : 1;
     const next = current + 1;
-    t.set(counterRef, { value: next });
-    return next;
+    t.update(counterRef, { nextId: next });
+    return current;
   });
   return result;
 };
 
-// ✅ מספק ID רץ לפרונט (חובה להוסיף לפני :id!)
-router.get("/next-id", async (req, res) => {
-  try {
-    const nextId = await getNextId();
-    res.status(200).send({ nextID: nextId });
-  } catch (error) {
-    console.error("❌ שגיאה בקבלת ID חדש:", error);
-    res.status(500).send({ error: "שגיאה בקבלת ID חדש" });
-  }
-});
-
-// 🔍 שליפת כל החומרים
 router.get("/", async (req, res) => {
   try {
     const snapshot = await db.collection("Materials").get();
-    const materials = snapshot.docs.map(doc => ({ ID: doc.id, ...doc.data() }));
+    const materials = snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      ID: doc.data().ID || doc.id, // 📌 ודאות להצגת ID
+    }));
     res.status(200).send(materials);
   } catch (error) {
-    console.error("❌ שגיאה בשליפת חומרים:", error);
-    res.status(500).send({ error: "שגיאה בשליפת החומרים" });
+    console.error("Error fetching materials:", error);
+    res.status(500).send({ error: "Error fetching materials" });
   }
 });
 
-// 📊 סיכום כללי
 router.get("/summary", async (req, res) => {
   try {
     const snapshot = await db.collection("Materials").get();
@@ -52,14 +43,21 @@ router.get("/summary", async (req, res) => {
     let total = 0;
     let expiringSoon = 0;
     let totalQuantity = 0;
+    let lowQuantity = 0;
 
-    snapshot.forEach(doc => {
+    snapshot.forEach((doc) => {
       total++;
       const data = doc.data();
       const expField = data.expirationDate || data["Expiry Date"];
 
-      if (typeof data.quantity === "number") {
-        totalQuantity += data.quantity;
+      const quantity = data.quantity || data.Quantity || data.amount || data.Amount;
+      const numericQty = typeof quantity === "number" ? quantity : parseFloat(quantity);
+
+      if (!isNaN(numericQty)) {
+        totalQuantity += numericQty;
+        if (numericQty < 50) {
+          lowQuantity++;
+        }
       }
 
       if (expField) {
@@ -72,35 +70,38 @@ router.get("/summary", async (req, res) => {
             expiringSoon++;
           }
         } catch (err) {
-          console.warn("❗ תאריך לא תקין:", expField);
+          console.warn("⚠️ Invalid expiration date format:", expField);
         }
       }
     });
 
-    res.status(200).send({ total, expiringSoon, totalQuantity });
+    res.status(200).send({
+      total,
+      expiringSoon,
+      lowQuantity,
+      totalQuantity,
+    });
   } catch (error) {
-    console.error("❌ שגיאה בסיכום החומרים:", error);
-    res.status(500).send({ error: "שגיאה בסיכום החומרים" });
+    console.error("❌ Error calculating summary:", error);
+    res.status(500).send({ error: "Error calculating summary" });
   }
 });
 
-// 🔍 שליפת חומר בודד לפי ID
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const doc = await db.collection("Materials").doc(id).get();
     if (!doc.exists) {
-      return res.status(404).send({ error: "החומר לא נמצא" });
+      return res.status(404).send({ error: "Material not found" });
     }
     const material = { id: doc.id, ...doc.data() };
     res.status(200).send(material);
   } catch (error) {
-    console.error("❌ שגיאה בשליפת חומר בודד:", error);
-    res.status(500).send({ error: "שגיאה בשליפת החומר" });
+    console.error("Error fetching material:", error);
+    res.status(500).send({ error: "Error fetching material" });
   }
 });
 
-// ✏️ עדכון שדה Quantity + יצוא ל־CSV
 router.put("/:id/quantity", async (req, res) => {
   const { id } = req.params;
   const { quantity } = req.body;
@@ -113,32 +114,27 @@ router.put("/:id/quantity", async (req, res) => {
     await db.collection("Materials").doc(id).update({ quantity });
 
     const snapshot = await db.collection("Materials").get();
-    const materials = snapshot.docs.map(doc => doc.data());
+    const materials = snapshot.docs.map((doc) => doc.data());
 
     if (materials.length === 0) {
-      return res.status(200).send({ message: "Quantity updated but no materials to save in CSV" });
+      return res.status(200).send({ message: "Quantity updated but no materials to export" });
     }
 
     const csvHeader = Object.keys(materials[0]).join(",") + "\n";
-    const csvRows = materials.map(mat =>
-      Object.values(mat).map(value => `"${value}"`).join(",")
+    const csvRows = materials.map((mat) =>
+      Object.values(mat).map((value) => `"${value}"`).join(",")
     );
     const csvContent = csvHeader + csvRows.join("\n");
 
-    fs.writeFileSync(
-      path.join(__dirname, "Materials_csv.csv"),
-      csvContent,
-      "utf8"
-    );
+    fs.writeFileSync(path.join(__dirname, "Materials_csv.csv"), csvContent, "utf8");
 
     res.status(200).send({ message: "Quantity updated and CSV saved" });
   } catch (error) {
-    console.error("❌ שגיאה בעדכון Quantity:", error);
+    console.error("Error updating quantity:", error);
     res.status(500).send({ error: "Failed to update quantity" });
   }
 });
 
-// ✅ עדכון Amount בלבד לפי ID
 router.put("/:id/amount", async (req, res) => {
   const { id } = req.params;
   const { amount } = req.body;
@@ -152,63 +148,45 @@ router.put("/:id/amount", async (req, res) => {
 
     res.status(200).send({ message: "Amount updated successfully" });
   } catch (error) {
-    console.error("❌ שגיאה בעדכון Amount:", error);
-    res.status(500).send({ error: "Failed to update Amount" });
+    console.error("Error updating amount:", error);
+    res.status(500).send({ error: "Failed to update amount" });
   }
 });
 
-/// ➕ הוספת חומר חדש עם ID אוטומטי
 router.post("/", async (req, res) => {
   try {
     const {
-      name,
-      expirationDate,
-      amount,
-      casNumber,
-      coa,
-      location,
-      lot,
-      msds,
-      no,
-      unit,
-      vendor,
-      tradename
+      Tradename, Amount, Unit, Location, Lot, Vendor,
+      "CAS Number": casNumber, MSDS, CoA, No, "Expiry Date": expiry
     } = req.body;
 
-    // בדיקת שדות חובה
-    if (!name || !expirationDate) {
-      return res.status(400).send({ error: "Missing required fields" });
-    }
-
-    // קבלת ID חדש רץ
     const newId = (await getNextId()).toString();
 
-    // יצירת חומר חדש עם שדה ID בפנים
+    const expiryDate = expiry || new Date(new Date().setMonth(new Date().getMonth() + 6))
+      .toLocaleDateString("en-GB"); // 📅 DD/MM/YYYY
+
     const newMaterial = {
-      ID: newId, // ✅ ה-ID גם כשדה בתוך הדאטה!
-      Name: name,
-      "Expiry Date": expirationDate,
-      Amount: amount,
+      ID: newId,
+      Tradename,
+      Amount,
+      Unit,
+      Location,
+      Lot,
+      Vendor,
       "CAS Number": casNumber,
-      CoA: coa,
-      Location: location,
-      Lot: lot,
-      MSDS: msds,
-      No: no,
-      Unit: unit,
-      Vendor: vendor,
-      Tradename: tradename
+      MSDS,
+      CoA,
+      No,
+      "Expiry Date": expiryDate,
     };
 
-    // שמירה ב-Firestore לפי ID
     await db.collection("Materials").doc(newId).set(newMaterial);
 
-    res.status(201).send({ message: "חומר נוסף בהצלחה!", id: newId });
+    res.status(201).send({ message: "Material added successfully", id: newId });
   } catch (error) {
-    console.error("❌ שגיאה בהוספת חומר:", error);
-    res.status(500).send({ error: "שגיאה בהוספת חומר" });
+    console.error("❌ Error adding material:", error);
+    res.status(500).send({ error: "Error adding material" });
   }
 });
-
 
 module.exports = router;
