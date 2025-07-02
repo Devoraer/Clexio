@@ -84,7 +84,7 @@ export default function HomePage() {
       stats: (
         <Stack direction="row" spacing={1} justifyContent="center" mt={2}>
           <Chip
-            label={Total: ${equipmentStats.total}}
+            label={`Total: ${equipmentStats.total}`}
             sx={{
               bgcolor: "#f0f0f0",
               color: "#333",
@@ -94,7 +94,7 @@ export default function HomePage() {
             }}
           />
           <Chip
-            label={${equipmentStats.overdue} overdue}
+            label={`${equipmentStats.overdue} overdue`}
             sx={{
               bgcolor: "#fdecea",
               color: "#d32f2f",
@@ -130,7 +130,7 @@ export default function HomePage() {
           <Chip
             label={
               sampleStats.total !== undefined
-                ? Total: ${sampleStats.total}
+                ? `Total: ${sampleStats.total}`
                 : "Loading..."
             }
             sx={{
@@ -166,7 +166,7 @@ export default function HomePage() {
       stats: (
         <Stack direction="row" spacing={1} justifyContent="center" mt={2}>
           <Chip
-            label={Total: ${materialStats.total}}
+            label={`Total: ${materialStats.total}`}
             sx={{
               bgcolor: "#f0f0f0",
               color: "#333",
@@ -176,7 +176,7 @@ export default function HomePage() {
             }}
           />
           <Chip
-            label={${materialStats.expiringSoon} expiring soon}
+            label={`${materialStats.expiringSoon} expiring soon`}
             sx={{
               bgcolor: "#fff3e0",
               color: "#fb8c00",
