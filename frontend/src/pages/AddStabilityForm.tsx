@@ -1,18 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, FileText, Save, Plus, Trash2, ChevronDown } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 const AddStabilityForm = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    stabilityName: '', projectName: '', dosageForm: '', dosageFormOther: '', batchNumber: '', strength: '', typeOfContainer: '', typeOfContainerOther: '', typeOfClosure: '',
+    ID: '', stabilityName: '', projectName: '', dosageForm: '', dosageFormOther: '', batchNumber: '', strength: '', typeOfContainer: '', typeOfContainerOther: '', typeOfClosure: '',
     typeOfClosureOther: '', typeOfSeal: '', condition: '', desiccant: '', desiccantOther: '', cottonOrSimilarMaterial: '', cottonOrSimilarMaterialOther: '', stabilityStorageConditions: '',
     testIntervalsLongTerm: [], testIntervalsIntermediate: [], testIntervalsAccelerated: [], containerOrientation: '',
     containerOrientationOther: '', stabilitySpecificationNumber: '',
     tests: [{ testName: '', conditionsAndIntervals: '', amountSamplesTimePoints: '', totalAmountSamples: '' }],
     totalAmountSamples: '',
-    completedBy: {name: '', signature: '', date: '' },
-    approvedByAnalytical: { name: '', signature: '', date: '' },
-    approvedByQA: { name: '', signature: '', date: '' }
+    completedBy: {name: '', date: '' },
+    approvedByAnalytical: { name: '', date: '' },
+    approvedByQA: { name: '', date: '' }
   });
+
+  useEffect(() => {
+  const fetchNextId = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/api/stability-checklist/next-id");
+      const nextId = await response.json();
+
+      setFormData(prev => ({
+        ...prev,
+        ID: nextId.toString()  // נכניס את ה־ID גם ל־formData כדי שישמר ב־DB
+      }));
+    } catch (error) {
+      console.error("❌ Failed to fetch ID:", error);
+    }
+  };
+
+  fetchNextId();
+}, []);
 
   // Dropdown options
   const [containerOptions, setContainerOptions] = useState(['HDP Bottle', 'LDPE Bag']);
@@ -274,8 +294,14 @@ const AddStabilityForm = () => {
     });
   };
 
-  const addTest = () => {
-    setFormData(prev => ({
+const addTest = () => {
+  setFormData(prev => {
+    if (prev.tests.length >= 15) {
+      alert("You can add up to 15 tests");
+      return prev;
+    }
+
+    return {
       ...prev,
       tests: [
         ...prev.tests,
@@ -286,8 +312,10 @@ const AddStabilityForm = () => {
           totalAmountSamples: ''
         }
       ]
-    }));
-  };
+    };
+  });
+};
+
 
   const removeTest = (index: number) => {
     setFormData(prev => ({
@@ -305,27 +333,33 @@ const AddStabilityForm = () => {
     }));
   };
 
-  const handleSubmit = async () => {
-    try {
-      const response = await fetch("http://localhost:3000/api/stability-checklist/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(formData)
-      });
+const handleSubmit = async () => {
+  try {
+    const filledFormData = {
+      ...formData,
+      openedDate: new Date().toISOString().split("T")[0], // 📅 תאריך פתיחה
+    };
 
-      if (response.ok) {
-        alert("✅ Checklist saved successfully!");
-      } else {
-        const errorText = await response.text();
-        alert("❌ Error: " + errorText);
-      }
-    } catch (error) {
-      console.error("❌ Error submitting form:", error);
-      alert("❌ Error submitting form: " + error.message);
+    const response = await fetch("http://localhost:3000/api/stability-checklist/add", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(filledFormData),
+    });
+
+    if (response.ok) {
+      alert("✅ Checklist saved successfully!");
+      navigate("/samples"); // חזרה לעמוד הראשי
+    } else {
+      const errorText = await response.text();
+      alert("❌ Error: " + errorText);
     }
-  };
+  } catch (error: any) {
+    console.error("❌ Error submitting form:", error);
+    alert("❌ Error submitting form: " + error.message);
+  }
+};
 
   const DropdownField = ({ 
     label, 

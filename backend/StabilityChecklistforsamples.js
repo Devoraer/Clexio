@@ -1,19 +1,40 @@
-// backend/routes/StabilityChecklistforsamples.js
+// 📁 backend/StabilityChecklistforsamples.js
 
 const express = require("express");
 const router = express.Router();
 const { db } = require("./firebase");
+
+// ✅ שליפת ID חדש מתוך IdCounters/StabilityChecklistId
+router.get("/next-id", async (req, res) => {
+  try {
+    const counterRef = db.collection("IdCounters").doc("StabilityChecklistId");
+    const result = await db.runTransaction(async (t) => {
+      const doc = await t.get(counterRef);
+      const current = doc.exists ? doc.data().nextId : 1;
+      const next = current + 1;
+      t.update(counterRef, { nextId: next });
+      return current;
+    });
+
+    res.status(200).send(result.toString());
+  } catch (err) {
+    console.error("❌ Failed to fetch next ID:", err);
+    res.status(500).send({ error: "Failed to get next stability checklist ID" });
+  }
+});
 
 // 🔸 POST: הוספת Stability Checklist חדשה
 router.post("/add", async (req, res) => {
   try {
     const data = req.body;
 
-    if (!data.stabilityName || !data.projectName) {
+    // 🛡️ בדיקת שדות חובה
+    if (!data.ID || !data.stabilityName || !data.projectName) {
       return res.status(400).send("Missing required fields");
     }
 
-    await db.collection("StabilityChecklist").add(data);
+    // 📝 שמירה לפי מזהה מותאם
+    await db.collection("StabilityChecklist").doc(data.ID.toString()).set(data);
 
     res.status(200).send("Stability checklist saved successfully.");
   } catch (error) {
@@ -22,7 +43,7 @@ router.post("/add", async (req, res) => {
   }
 });
 
-// 🔹 GET: שליפת כל ה-Stability Checklists (לא חובה אבל שימושי אם תבני דשבורד)
+// 🔹 שליפת כל הטפסים
 router.get("/", async (req, res) => {
   try {
     const snapshot = await db.collection("StabilityChecklist").get();

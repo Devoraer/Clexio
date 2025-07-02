@@ -7,6 +7,8 @@ import FrontDashboard from "./pages/FrontDashboard";
 import SamplesDashboard from "./pages/SamplesDashboard";
 import AddStabilityForm from "./pages/AddStabilityForm";
 import AddSample from "./components/AddSample";
+import ViewStability from "./pages/ViewStability";
+
 
 export default function App() {
   return (
@@ -20,6 +22,7 @@ export default function App() {
         <Route path="/samples" element={<SamplesDashboard />} />
         <Route path="/add-stability" element={<AddStabilityForm />} />
         <Route path="/add-sample" element={<AddSample />} />
+        <Route path="/view-stability/:id" element={<ViewStability />} />
       </Routes>
     </BrowserRouter>
   );

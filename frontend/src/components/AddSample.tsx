@@ -96,7 +96,7 @@ const AddSample = ({ onSampleAdded = () => {} }: { onSampleAdded?: () => void })
       </Button>
 
       <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>🧪 Add New Sample</DialogTitle>
+        <DialogTitle> Add New Sample</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1, minWidth: 300 }}>
             <TextField label="Sample Name" name="sampleName" value={formData.sampleName} onChange={handleChange} fullWidth required />
@@ -128,11 +128,11 @@ const AddSample = ({ onSampleAdded = () => {} }: { onSampleAdded?: () => void })
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleSave} variant="contained" color="primary">
-            Add ✅
-          </Button>
           <Button onClick={handleClose} color="secondary">
-            Cancel ❌
+            Cancel 
+          </Button>
+          <Button onClick={handleSave} variant="contained" color="primary">
+            Add 
           </Button>
         </DialogActions>
       </Dialog>
