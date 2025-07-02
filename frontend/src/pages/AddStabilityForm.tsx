@@ -3,55 +3,15 @@ import { Calendar, FileText, Save, Plus, Trash2, ChevronDown } from 'lucide-reac
 
 const AddStabilityForm = () => {
   const [formData, setFormData] = useState({
-    stabilityName: '',
-    projectName: '',
-    dosageForm: '',
-    dosageFormOther: '',
-    batchNumber: '',
-    strength: '',
-    typeOfContainer: '',
-    typeOfContainerOther: '',
-    typeOfClosure: '',
-    typeOfClosureOther: '',
-    typeOfSeal: '',
-    condition: '',
-    desiccant: '',
-    desiccantOther: '',
-    cottonOrSimilarMaterial: '',
-    cottonOrSimilarMaterialOther: '',
-    stabilityStorageConditions: {
-      longTerm: '25 ± 2°C 60%RH ±5%RH',
-      accelerated: '40 ± 2°C 75%RH ±5%RH',
-      intermediate: '30 ± 2°C 65%RH ±5%RH'
-    },
-    testIntervalsLongTerm: [],
-    testIntervalsIntermediate: [],
-    testIntervalsAccelerated: [],
-    containerOrientation: '',
-    containerOrientationOther: '',
-    stabilitySpecificationNumber: '',
-    tests: [{
-      testName: '',
-      conditionsAndIntervals: '',
-      amountSamplesTimePoints: '',
-      totalAmountSamples: ''
-    }],
+    stabilityName: '', projectName: '', dosageForm: '', dosageFormOther: '', batchNumber: '', strength: '', typeOfContainer: '', typeOfContainerOther: '', typeOfClosure: '',
+    typeOfClosureOther: '', typeOfSeal: '', condition: '', desiccant: '', desiccantOther: '', cottonOrSimilarMaterial: '', cottonOrSimilarMaterialOther: '', stabilityStorageConditions: '',
+    testIntervalsLongTerm: [], testIntervalsIntermediate: [], testIntervalsAccelerated: [], containerOrientation: '',
+    containerOrientationOther: '', stabilitySpecificationNumber: '',
+    tests: [{ testName: '', conditionsAndIntervals: '', amountSamplesTimePoints: '', totalAmountSamples: '' }],
     totalAmountSamples: '',
-    completedBy: {
-      name: '',
-      signature: '',
-      date: ''
-    },
-    approvedByAnalytical: {
-      name: '',
-      signature: '',
-      date: ''
-    },
-    approvedByQA: {
-      name: '',
-      signature: '',
-      date: ''
-    }
+    completedBy: {name: '', signature: '', date: '' },
+    approvedByAnalytical: { name: '', signature: '', date: '' },
+    approvedByQA: { name: '', signature: '', date: '' }
   });
 
   // Dropdown options
@@ -609,60 +569,30 @@ const AddStabilityForm = () => {
           </div>
 
           {/* Storage Conditions */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>Stability Storage Conditions</h3>
-            <div style={styles.rowThree}>
-              <DropdownField
-                label="Long Term"
-                value={formData.stabilityStorageConditions.longTerm}
-                options={storageConditionOptions.longTerm}
-                onSelect={(value) => handleNestedInputChange('stabilityStorageConditions', 'longTerm', value)}
-                placeholder="Select long term condition..."
-                showDropdown={showLongTermDropdown}
-                setShowDropdown={setShowLongTermDropdown}
-              />
-              
-              <DropdownField
-                label="Accelerated"
-                value={formData.stabilityStorageConditions.accelerated}
-                options={storageConditionOptions.accelerated}
-                onSelect={(value) => handleNestedInputChange('stabilityStorageConditions', 'accelerated', value)}
-                placeholder="Select accelerated condition..."
-                showDropdown={showAcceleratedDropdown}
-                setShowDropdown={setShowAcceleratedDropdown}
-              />
-              
-              <DropdownField
-                label="Intermediate"
-                value={formData.stabilityStorageConditions.intermediate}
-                options={storageConditionOptions.intermediate}
-                onSelect={(value) => handleNestedInputChange('stabilityStorageConditions', 'intermediate', value)}
-                placeholder="Select intermediate condition..."
-                showDropdown={showIntermediateDropdown}
-                setShowDropdown={setShowIntermediateDropdown}
-              />
-            </div>
-          </div>
-
-
-          {/* Container Orientation */}
-            <div style={styles.fieldGroup}>
+          <div style={styles.fieldGroup}>
             <h3 style={styles.sectionTitle}>Stability Storage Conditions</h3>
             <div style={styles.radioGroup}>
-              {['Long Term 25 ± 2°C  60%RH ±5%RH', 'Accelerated 40 ± 2°C  75%RH ±5%RH', 'Intermediate 30 ± 2°C  65%RH ±5%RH'].map((orientation) => (
+              {[
+                'Long Term 25 ± 2°C  60%RH ±5%RH',
+                'Accelerated 40 ± 2°C  75%RH ±5%RH',
+                'Intermediate 30 ± 2°C  65%RH ±5%RH'
+              ].map((orientation) => (
                 <label key={orientation} style={styles.radioItem}>
                   <input
                     type="radio"
-                    name="containerOrientation"
+                    name="stabilityStorageConditions" // ✅ בלי רווח
                     value={orientation}
-                    checked={formData.containerOrientation === orientation}
-                    onChange={(e) => handleInputChange('containerOrientation', e.target.value)}
+                    checked={formData.stabilityStorageConditions === orientation} // ✅ גם כאן אותו שם
+                    onChange={(e) =>
+                      handleInputChange('stabilityStorageConditions', e.target.value)
+                    } // ✅ גם כאן בלי רווח
                   />
                   <span>{orientation}</span>
                 </label>
               ))}
             </div>
           </div>
+
 
           {/* Test Intervals */}
           {['LongTerm', 'Intermediate', 'Accelerated'].map((type) => (

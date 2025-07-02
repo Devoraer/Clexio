@@ -1,78 +1,69 @@
-// ✅ SamplesDashboard.tsx – גרסה עם מיון לפי In progress קודם + שמירה בפורמט dd/mm/yyyy
-// ✅ SamplesDashboard.tsx – גרסה עם מיון לפי In progress קודם + שילוב Stability checklist + Expand מלא
+// ✅ SamplesDashboard.tsx – with separated sections for samples and stability checks
+
 import React, { useEffect, useState } from "react";
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Chip,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Stack,
-  Menu,
-  MenuItem,
+  Box,Card,CardContent,Typography,Chip,TextField,Dialog,DialogTitle,DialogContent,DialogActions,Button,Stack,Menu,MenuItem,Divider,Paper,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ScienceIcon from "@mui/icons-material/Science";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-// טיפוסים
-interface Sample {
+import AddSample from "../components/AddSample";
+
+type Sample = {
   ID: number;
   dateOfReceipt: string;
   clexioNumber: string;
   sampleName: string;
-  containers: number;
-  testsRequired: boolean;
+  containers: string;
+  testsRequired: string;
   projectName: string;
   receivedFrom: string;
   storage: string;
   receivedBy: string;
+  MachineMade: string;
   comment: string;
   completionDate: string;
   completedBy: string;
-}
+};
 
-interface StabilityChecklistItem {
+type StabilityChecklistItem = {
   ID: number;
   openedDate: string;
   stabilityName: string;
-  projectName: string;
-  dosageForm: string;
-  batchNumber: string;
-  strength: string;
-  typeOfContainer: string;
-  typeOfClosure: string;
-  desiccant: string;
-  cottonMaterial: string;
-  storageConditions: string;
-  testIntervalsLongTerm: string;
-  testIntervalsIntermediate: string;
-  testIntervalsAccelerated: string;
-  containerOrientation: string;
-  specNumber: string;
-  testName: string;
-  conditionsAndIntervals: string;
-  amount: string;
-  totalAmount: string;
-  nameSignature1: string;
-  date1: string;
-  nameSignature2: string;
-  date2: string;
-  nameSignature3: string;
-  date3: string;
-}
+  ProjectName: string;
+  DosageForm: string;
+  BatchNumber: string;
+  Strength: string;
+  TypeOfContainer: string;
+  TypeOfClosure: string;
+  Desiccant: string;
+  CottonorSimilarMaterial: string; 
+  StabilitiyStorageConditions: string;
+  TestIntervalsLongTerm: string; 
+  TestIntervalsIntermediate: string;
+  TesrIntervalsAccelerated: string;
+  ContainerOrientation: string;
+  StabilitySpecificationNumber: string;
+  TestName: string;
+  ConditionsandIntervals: string;
+  Amount: string;
+  Totalamountofsamplesperstudyincludingpares: string;
+  NameAndSignature1: string;
+  Date1: string;
+  NameAndSignature2: string;
+  Date2: string;
+  NameAndSignature3: string;
+  Date: string;
 
-// קומפוננטה
+};
+
 const SamplesDashboard = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
   const [samples, setSamples] = useState<Sample[]>([]);
   const [stabilityItems, setStabilityItems] = useState<StabilityChecklistItem[]>([]);
   const [search, setSearch] = useState("");
@@ -99,6 +90,7 @@ const SamplesDashboard = () => {
         receivedFrom: item.receivedFrom,
         storage: item.storage,
         receivedBy: item.receivedBy,
+        MachineMade: item.MachineMade,
         comment: item.comment,
         completionDate: item.completionDate,
         completedBy: item.completedBy,
@@ -170,14 +162,77 @@ const SamplesDashboard = () => {
     .filter((s) => s.sampleName.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => getStatus(b).weight - getStatus(a).weight);
 
+const filteredStabilityItems = stabilityItems.filter((item) => {
+  const name = item.stabilityName || "";
+  return name.toLowerCase().includes(search.toLowerCase());
+});
+
+  const renderSampleCard = (sample: Sample) => {
+    const status = getStatus(sample);
+    return (
+      <Card key={sample.ID} sx={{ borderRadius: 4, boxShadow: 3 }}>
+        <CardContent sx={{ display: "flex", flexDirection: "column", minHeight: 250, justifyContent: "space-between", padding: 2 }}>
+          <Box sx={{ mb: 1 }}>
+            <Chip label={status.status} color={status.color as any} sx={{ mb: 1 }} />
+            <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>{sample.sampleName}</Typography>
+          </Box>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2">ID: {sample.ID}</Typography>
+            <Typography variant="body2">Date of Receipt: {sample.dateOfReceipt}</Typography>
+            <Typography variant="body2">Clexio Number: {sample.clexioNumber}</Typography>
+            <Typography variant="body2">Containers: {sample.containers}</Typography>
+          </Box>
+          {status.status === "In progress" && (
+            <Stack spacing={1.5}>
+              <TextField label="Completion Date" type="date" size="small" fullWidth InputLabelProps={{ shrink: true }} value={updateFields[sample.ID]?.completionDate || ""} onChange={(e) => setUpdateFields((prev) => ({ ...prev, [sample.ID]: { ...prev[sample.ID], completionDate: e.target.value } }))} />
+              <TextField label="Completed By" size="small" fullWidth value={updateFields[sample.ID]?.completedBy || ""} onChange={(e) => setUpdateFields((prev) => ({ ...prev, [sample.ID]: { ...prev[sample.ID], completedBy: e.target.value } }))} />
+            </Stack>
+          )}
+          <Stack direction="row" spacing={1} justifyContent="space-between" sx={{ mt: 2 }}>
+            {status.status === "In progress" && <Button size="small" variant="outlined" onClick={() => handleUpdate(sample.ID)}>Update</Button>}
+            <Button size="small" endIcon={<ExpandMoreIcon />} onClick={() => { setSelectedSample(sample); setShowSampleDialog(true); }}>Expand</Button>
+          </Stack>
+        </CardContent>
+      </Card>
+    );
+  };
+
+const renderStabilityCard = (item: StabilityChecklistItem) => (
+  <Card key={`stability-${item.ID}`} sx={{ borderRadius: 4, boxShadow: 3 }}>
+    <CardContent sx={{ display: "flex", flexDirection: "column", minHeight: 180, justifyContent: "space-between", padding: 2 }}>
+      <Box sx={{ mb: 1 }}>
+        <Chip label="Stability" color="info" sx={{ mb: 1 }} />
+        <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>
+          {item.stabilityName}
+        </Typography>
+      </Box>
+      <Box>
+        <Typography variant="body2">ID: {item.ID}</Typography>
+        <Typography variant="body2">Opened Date: {item.openedDate}</Typography>
+        <Typography variant="body2">Project Name: {item.ProjectName}</Typography>
+      </Box>
+      <Button
+        size="small"
+        endIcon={<ExpandMoreIcon />}
+        sx={{ mt: 2 }}
+        onClick={() => navigate(`/stability/${item.ID}`)}
+      >
+        Expand
+      </Button>
+    </CardContent>
+  </Card>
+);
+
   return (
     <Box sx={{ padding: 4, backgroundColor: "#f5f7fb", width: "100%", boxSizing: "border-box" }}>
       <Typography variant="h4" gutterBottom>Samples Dashboard</Typography>
       <Typography variant="body1" sx={{ mb: 3 }}>Total samples loaded: {samples.length} | Stability checklist loaded: {stabilityItems.length}</Typography>
 
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3, flexWrap: "wrap" }}>
-        <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={fetchSamples}>Add Sample</Button>
-        <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={() => navigate("/add-stability")}>Add Stability Check</Button>
+        <AddSample onSampleAdded={fetchSamples} />
+        <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={() => navigate("/add-stability")}>
+          Add Stability Check
+        </Button>
         <Button variant="outlined" startIcon={<FilterListIcon />} onClick={(e) => setAnchorEl(e.currentTarget)}>Filter</Button>
         <Menu anchorEl={anchorEl} open={openMenu} onClose={() => setAnchorEl(null)}>
           {["All", "Completed", "In progress"].map((status) => (
@@ -190,67 +245,77 @@ const SamplesDashboard = () => {
         <TextField variant="outlined" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search samples..." sx={{ flexGrow: 1, minWidth: "220px" }} />
       </Stack>
 
-      <Box sx={{
-        display: "grid",
-        gap: 3,
-        width: "100%",
-        gridTemplateColumns: {
-          xs: "1fr",
-          sm: "repeat(2, 1fr)",
-          md: "repeat(3, 1fr)",
-          lg: "repeat(4, 1fr)",
-        },
-      }}>
-        {filteredSamples.map((sample) => {
-          const status = getStatus(sample);
-          return (
-            <Card key={sample.ID} sx={{ borderRadius: 4, boxShadow: 3 }}>
-              <CardContent sx={{ display: "flex", flexDirection: "column", minHeight: 250, justifyContent: "space-between", padding: 2 }}>
-                <Box sx={{ mb: 1 }}>
-                  <Chip label={status.status} color={status.color as any} sx={{ mb: 1 }} />
-                  <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>{sample.sampleName}</Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2">ID: {sample.ID}</Typography>
-                  <Typography variant="body2">Date of Receipt: {sample.dateOfReceipt}</Typography>
-                  <Typography variant="body2">Clexio Number: {sample.clexioNumber}</Typography>
-                  <Typography variant="body2">Containers: {sample.containers}</Typography>
-                </Box>
-                {status.status === "In progress" && (
-                  <Stack spacing={1.5}>
-                    <TextField label="Completion Date" type="date" size="small" fullWidth InputLabelProps={{ shrink: true }} value={updateFields[sample.ID]?.completionDate || ""} onChange={(e) => setUpdateFields((prev) => ({ ...prev, [sample.ID]: { ...prev[sample.ID], completionDate: e.target.value } }))} />
-                    <TextField label="Completed By" size="small" fullWidth value={updateFields[sample.ID]?.completedBy || ""} onChange={(e) => setUpdateFields((prev) => ({ ...prev, [sample.ID]: { ...prev[sample.ID], completedBy: e.target.value } }))} />
-                  </Stack>
-                )}
-                <Stack direction="row" spacing={1} justifyContent="space-between" sx={{ mt: 2 }}>
-                  {status.status === "In progress" && <Button size="small" variant="outlined" onClick={() => handleUpdate(sample.ID)}>Update</Button>}
-                  <Button size="small" endIcon={<ExpandMoreIcon />} onClick={() => { setSelectedSample(sample); setShowSampleDialog(true); }}>Expand</Button>
-                </Stack>
-              </CardContent>
-            </Card>
-          );
-        })}
+      {/* 🧪 SAMPLES SECTION */}
+      <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 3 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+          <ScienceIcon sx={{ mr: 1, color: "#0288d1", fontSize: 28 }} />
+          <Typography variant="h5" sx={{ fontWeight: "bold", color: "#0288d1" }}>
+            Laboratory Samples
+          </Typography>
+          <Chip 
+            label={filteredSamples.length} 
+            color="primary" 
+            sx={{ ml: 2 }} 
+          />
+        </Box>
+        
+        {filteredSamples.length === 0 ? (
+          <Typography variant="body1" sx={{ textAlign: "center", py: 4, color: "#666" }}>
+            No samples found matching your criteria
+          </Typography>
+        ) : (
+          <Box sx={{
+            display: "grid",
+            gap: 3,
+            width: "100%",
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2, 1fr)",
+              md: "repeat(3, 1fr)",
+              lg: "repeat(4, 1fr)",
+            },
+          }}>
+            {filteredSamples.map(renderSampleCard)}
+          </Box>
+        )}
+      </Paper>
 
-        {stabilityItems.map((item) => (
-          <Card key={`stability-${item.ID}`} sx={{ borderRadius: 4, boxShadow: 3 }}>
-            <CardContent sx={{ display: "flex", flexDirection: "column", minHeight: 180, justifyContent: "space-between", padding: 2 }}>
-              <Box sx={{ mb: 1 }}>
-                <Chip label="Stability" color="info" sx={{ mb: 1 }} />
-                <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>{item.stabilityName}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2">ID: {item.ID}</Typography>
-                <Typography variant="body2">Opened Date: {item.openedDate}</Typography>
-              </Box>
-              <Button size="small" endIcon={<ExpandMoreIcon />} sx={{ mt: 2 }} onClick={() => {
-                setSelectedStability(item);
-                setShowStabilityDialog(true);
-              }}>Expand</Button>
-            </CardContent>
-          </Card>
-        ))}
-      </Box>
+      {/* 📋 STABILITY SECTION */}
+      <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 3 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+          <AssignmentIcon sx={{ mr: 1, color: "#0288d1", fontSize: 28 }} />
+          <Typography variant="h5" sx={{ fontWeight: "bold", color: "#0288d1" }}>
+            Stability Checklist
+          </Typography>
+          <Chip 
+            label={filteredStabilityItems.length} 
+            color="primary"
+            sx={{ ml: 2 }} 
+          />
+        </Box>
+        
+        {filteredStabilityItems.length === 0 ? (
+          <Typography variant="body1" sx={{ textAlign: "center", py: 4, color: "#666" }}>
+            No stability checks found matching your criteria
+          </Typography>
+        ) : (
+          <Box sx={{
+            display: "grid",
+            gap: 3,
+            width: "100%",
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2, 1fr)",
+              md: "repeat(3, 1fr)",
+              lg: "repeat(4, 1fr)",
+            },
+          }}>
+            {filteredStabilityItems.map(renderStabilityCard)}
+          </Box>
+        )}
+      </Paper>
 
+      {/* DIALOGS */}
       {selectedSample && (
         <Dialog open={showSampleDialog} onClose={() => setShowSampleDialog(false)}>
           <DialogTitle>{selectedSample.sampleName}</DialogTitle>

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import FrontDashboard from "./pages/FrontDashboard";
 import SamplesDashboard from "./pages/SamplesDashboard";
 import AddStabilityForm from "./pages/AddStabilityForm";
+import AddSample from "./components/AddSample";
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/machines" element={<MachinesDashboard />} />
         <Route path="/samples" element={<SamplesDashboard />} />
         <Route path="/add-stability" element={<AddStabilityForm />} />
+        <Route path="/add-sample" element={<AddSample />} />
       </Routes>
     </BrowserRouter>
   );

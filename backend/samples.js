@@ -2,8 +2,6 @@
 const express = require("express");
 const router = express.Router();
 const { db } = require("./firebase");
-const fs = require("fs");
-const path = require("path");
 
 // 🧮 פונקציה שמביאה את הערך הנוכחי ומגדילה אותו
 const getNextId = async () => {
@@ -17,17 +15,6 @@ const getNextId = async () => {
   });
   return result;
 };
-
-// ✅ מספק ID חדש לפרונט
-router.get("/next-id", async (req, res) => {
-  try {
-    const nextId = await getNextId();
-    res.status(200).send({ nextID: nextId });
-  } catch (error) {
-    console.error("❌ שגיאה בקבלת ID חדש לדגימה:", error);
-    res.status(500).send({ error: "שגיאה בקבלת ID לדגימה" });
-  }
-});
 
 // 🔍 שליפת כל הדגימות
 router.get("/", async (req, res) => {
@@ -57,7 +44,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// ➕ הוספת דגימה חדשה
+// ➕ הוספת דגימה חדשה עם ID שנוצר מהשרת בלבד
 router.post("/", async (req, res) => {
   try {
     const {
@@ -75,26 +62,28 @@ router.post("/", async (req, res) => {
       testsRequired
     } = req.body;
 
+    // אימות שדות חובה
     if (!clexioNumber || !dateOfReceipt || !sampleName) {
-      return res.status(400).send({ error: "חסרים שדות חובה" });
+      return res.status(400).send({ error: "חסרים שדות חובה: clexioNumber, dateOfReceipt, sampleName" });
     }
 
+    // קבלת ID חדש אוטומטי
     const newId = (await getNextId()).toString();
 
     const newSample = {
       ID: newId,
       clexioNumber,
-      comment,
-      completedBy,
-      completionDate,
-      containers,
+      comment: comment || "",
+      completedBy: completedBy || "",
+      completionDate: completionDate || "",
+      containers: containers || 0,
       dateOfReceipt,
-      projectName,
-      receivedBy,
-      receivedFrom,
+      projectName: projectName || "",
+      receivedBy: receivedBy || "",
+      receivedFrom: receivedFrom || "",
       sampleName,
-      storage,
-      testsRequired
+      storage: storage || "",
+      testsRequired: testsRequired || ""
     };
 
     await db.collection("Samples").doc(newId).set(newSample);
@@ -105,7 +94,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ✏️ עדכון שדה comment לפי ID
+// ✏️ עדכון הערה לפי ID
 router.put("/:id/comment", async (req, res) => {
   const { id } = req.params;
   const { comment } = req.body;
@@ -119,25 +108,25 @@ router.put("/:id/comment", async (req, res) => {
   }
 });
 
-// ✅ עדכון completionDate ו-completedBy לפי ID כולל המרת פורמט תאריך ל-dd/mm/yyyy
+// ✅ עדכון completionDate ו-completedBy לפי ID
 router.put("/:id/completion", async (req, res) => {
   const { id } = req.params;
   const { completionDate, completedBy } = req.body;
 
   if (!completionDate && !completedBy) {
-    return res.status(400).send({ error: "At least one field (completionDate or completedBy) is required" });
+    return res.status(400).send({ error: "חובה לציין לפחות completionDate או completedBy" });
   }
 
   try {
     const updateData = {};
 
     if (completionDate) {
-      // אם הפורמט הוא yyyy-mm-dd, המרה ל-dd/mm/yyyy
+      // המרת תאריך מ־yyyy-mm-dd ל־dd/mm/yyyy
       if (/^\d{4}-\d{2}-\d{2}$/.test(completionDate)) {
         const [year, month, day] = completionDate.split("-");
         updateData.completionDate = `${day}/${month}/${year}`;
       } else {
-        updateData.completionDate = completionDate; // נניח שהוא כבר בפורמט נכון
+        updateData.completionDate = completionDate;
       }
     }
 
@@ -145,10 +134,10 @@ router.put("/:id/completion", async (req, res) => {
       updateData.completedBy = completedBy;
     }
 
-    await db.collection("Samples").doc(id.toString()).update(updateData);
+    await db.collection("Samples").doc(id).update(updateData);
     res.status(200).send({ message: "Sample completion info updated successfully" });
   } catch (error) {
-    console.error("❌ שגיאה בעדכון completion של דגימה:", error);
+    console.error("❌ שגיאה בעדכון completion:", error);
     res.status(500).send({ error: "שגיאה בעדכון שדות השלמה" });
   }
 });
