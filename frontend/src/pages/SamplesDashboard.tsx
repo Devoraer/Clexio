@@ -13,6 +13,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import AddSample from "../components/AddSample";
 
+
 type Sample = {
   ID: number;
   dateOfReceipt: string;
@@ -40,6 +41,8 @@ const SamplesDashboard = () => {
   const openMenu = Boolean(anchorEl);
   const [updateFields, setUpdateFields] = useState<{ [id: number]: { completionDate: string; completedBy: string } }>({});
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
+  const [openAddSampleDialog, setOpenAddSampleDialog] = useState(false);
+
 
   const toggleExpand = (id: number) => {
     setExpandedIds((prev) =>
@@ -252,7 +255,7 @@ const renderStabilityCard = (item: any) => {
       </Typography>
 
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3, flexWrap: "wrap" }}>
-        <AddSample onSampleAdded={fetchSamples} />
+        <Button variant="contained" onClick={() => setOpenAddSampleDialog(true)}> + ADD SAMPLE </Button>
         <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={() => navigate("/add-stability")}>Add Stability Check</Button>
         <Button variant="outlined" startIcon={<FilterListIcon />} onClick={(e) => setAnchorEl(e.currentTarget)}>Filter</Button>
         <Menu anchorEl={anchorEl} open={openMenu} onClose={() => setAnchorEl(null)}>
@@ -309,6 +312,15 @@ const renderStabilityCard = (item: any) => {
           </Box>
         )}
       </Paper>
+
+      <AddSample
+        open={openAddSampleDialog}
+        onClose={() => setOpenAddSampleDialog(false)}
+        onSuccess={() => {
+          setOpenAddSampleDialog(false);
+          fetchSamples(); 
+        }}
+      />
     </Box>
   );
 };
