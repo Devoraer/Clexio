@@ -1,5 +1,3 @@
-// 📁 HomePage.tsx
-
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -215,35 +213,7 @@ export default function HomePage() {
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      {/* Sidebar */}
-      <Box
-        sx={{
-          width: 240,
-          background: "linear-gradient(to bottom, #1976d2, #1565c0)",
-          color: "white",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          py: 4,
-          gap: 3,
-        }}
-      >
-        <Typography variant="h6" fontWeight={700} mb={2}>
-          Smart Lab
-        </Typography>
-        <CardActionArea onClick={() => navigate("/")}>
-          <Box display="flex" alignItems="center" gap={1}>
-            <HomeIcon /> <Typography>Home</Typography>
-          </Box>
-        </CardActionArea>
-        <CardActionArea
-          onClick={() => window.open("https://calendar.google.com", "_blank")}
-        >
-          <Box display="flex" alignItems="center" gap={1}>
-            <CalendarMonthIcon /> <Typography>Calendar</Typography>
-          </Box>
-        </CardActionArea>
-      </Box>
+    
 
       {/* Main Content */}
       <Box
@@ -257,8 +227,20 @@ export default function HomePage() {
           p: 4,
         }}
       >
-        {/* טבלה למעלה */}
-        <Box mt={2} width="100%" maxWidth="900px">
+        {/* טבלה עם גובה קבוע וגלילה פנימית */}
+        <Box
+          mt={2}
+          width="100%"
+          maxWidth="900px"
+          sx={{
+            maxHeight: 360,
+            overflowY: "auto",
+            backgroundColor: "white",
+            borderRadius: 2,
+            boxShadow: 3,
+            p: 2,
+          }}
+        >
           <Typography variant="h5" mb={2} textAlign="center" color="primary">
             🔔 Urgent Alerts
           </Typography>
@@ -272,14 +254,14 @@ export default function HomePage() {
             gap: 4,
             flexWrap: "wrap",
             justifyContent: "center",
-            mt: 25,
+            mt: 6,
           }}
         >
           {cards.map((card, index) => (
             <Card
               key={index}
               sx={{
-                width: 280,
+                width: 261,
                 minHeight: 220,
                 display: "flex",
                 alignItems: "center",

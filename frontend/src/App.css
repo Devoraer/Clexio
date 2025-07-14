@@ -40,3 +40,20 @@
 .read-the-docs {
   color: #888;
 }
+
+/* ✅ סגנון מודגש לכרטיס שהגיע מהתראה */
+
+.highlighted-card {
+  outline: 4px solid #ff9800;
+  outline-offset: -4px;
+  animation: pulse-border 1s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-border {
+  from {
+    outline-color: #ff9800;
+  }
+  to {
+    outline-color: #ffc107;
+  }
+}

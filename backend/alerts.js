@@ -1,42 +1,44 @@
 const express = require("express");
 const { db } = require("./firebase");
-const dayjs = require("dayjs");
-
 const alertsRouter = express.Router();
 
 alertsRouter.get("/comingSoon", async (req, res) => {
   try {
-    const now = dayjs();
-    const in10days = dayjs().add(10, "day");
-    const in30days = dayjs().add(30, "day");
+    const now = new Date();
     const alerts = [];
 
-    // 🧪 חומרים שתוקפם יפוג תוך 30 יום – תאריך בתור מחרוזת "DD/MM/YYYY"
+    const checkExpiryStatus = (dateStr) => {
+      try {
+        const [day, month, year] = dateStr.split("/").map(Number);
+        const expiry = new Date(year, month - 1, day);
+        const diffDays = Math.floor((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays < 0) return "Expired";
+        if (diffDays < 30) return "Expiring Soon";
+        return "Valid";
+      } catch {
+        return "Invalid";
+      }
+    };
+
+    // 🧪 חומרים שתוקפם עומד לפוג בלבד
     const materialsSnap = await db.collection("Materials").get();
     materialsSnap.docs.forEach((doc) => {
       const data = doc.data();
-      const rawDate = data["Expiry Date"];
+      const rawDate = (data["Expiry Date"] || "").trim();
+      const status = checkExpiryStatus(rawDate);
 
-      if (!rawDate || typeof rawDate !== "string") return;
-
-      const expiry = dayjs(rawDate, ["DD/MM/YYYY", "YYYY-MM-DD", "MM/DD/YYYY"], true);
-
-      if (!expiry.isValid()) {
-        console.log("❌ תאריך לא תקני לחומר:", data.Tradename || data.ID, rawDate);
-        return;
-      }
-
-      if (expiry.isAfter(now) && expiry.isBefore(in30days)) {
+      if (status === "Expiring Soon") {
         alerts.push({
           type: "Material",
-          name: data.Tradename || data.ID,
-          dueDate: expiry.format("DD/MM/YYYY"),
-          status: "Expiring Soon",
+          id: doc.id,
+          name: data.Tradename || data.name || "Unknown",
+          dueDate: rawDate,
+          status,
         });
       }
     });
 
-    // 🛠️ מכונות שתוקפן עבר או מתקרב תוך 10 ימים
+    // 🛠️ מכונות שתוקפן עבר או קרוב
     const machinesSnap = await db.collection("Machines").get();
     machinesSnap.docs.forEach((doc) => {
       const data = doc.data();
@@ -44,26 +46,35 @@ alertsRouter.get("/comingSoon", async (req, res) => {
       if (!rawDate) return;
 
       let nextCalibration = null;
+
+      // ✅ תאריך מסוג Firebase Timestamp
       if (typeof rawDate.toDate === "function") {
-        nextCalibration = dayjs(rawDate.toDate());
-      } else if (typeof rawDate === "string") {
-        nextCalibration = dayjs(rawDate, ["DD/MM/YYYY", "YYYY-MM-DD", "MM/DD/YYYY"]);
+        nextCalibration = rawDate.toDate();
+      }
+      // ✅ תאריך מסוג מחרוזת
+      else if (typeof rawDate === "string") {
+        const [day, month, year] = rawDate.split("/").map(Number);
+        nextCalibration = new Date(year, month - 1, day);
       }
 
-      if (!nextCalibration || !nextCalibration.isValid()) return;
+      if (!nextCalibration || isNaN(nextCalibration.getTime())) return;
 
-      if (nextCalibration.isBefore(now)) {
+      const diffDays = Math.floor((nextCalibration.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
         alerts.push({
           type: "Machine",
-          name: data["Instrument ID"] || data.ID,
-          dueDate: nextCalibration.format("DD/MM/YYYY"),
+          id: doc.id,
+          name: data["Instrument ID"] || data.ID || "Unknown Machine",
+          dueDate: nextCalibration, // ✅ תאריך אמיתי
           status: "Calibration Overdue",
         });
-      } else if (nextCalibration.isBefore(in10days)) {
+      } else if (diffDays < 10) {
         alerts.push({
           type: "Machine",
-          name: data["Instrument ID"] || data.ID,
-          dueDate: nextCalibration.format("DD/MM/YYYY"),
+          id: doc.id,
+          name: data["Instrument ID"] || data.ID || "Unknown Machine",
+          dueDate: nextCalibration, // ✅ תאריך אמיתי
           status: "Calibration Due Soon",
         });
       }
