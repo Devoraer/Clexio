@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import './App.css';
 
 // ✅ עמודים
-import HomePage from "./components/HomePage";
+ import HomePage from "./components/HomePage";
 import MachinesDashboard from "./pages/MachinesDashboard";
 import MaterialsDashboard from "./pages/MaterialsDashboard";
 import FrontDashboard from "./pages/FrontDashboard";
@@ -20,8 +20,6 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* עמוד ההתחברות מחוץ ל־Sidebar */}
-
-        {/* כל שאר הדפים - עם Sidebar */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/dashboard" element={<FrontDashboard />} />
