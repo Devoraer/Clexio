@@ -144,7 +144,7 @@ router.put("/:id/amount", async (req, res) => {
       return res.status(400).send({ error: "Amount must be a number" });
     }
 
-    await db.collection("Materials").doc(id).update({ amount });
+    await db.collection("Materials").doc(id).update({ Amount: amount });
 
     res.status(200).send({ message: "Amount updated successfully" });
   } catch (error) {

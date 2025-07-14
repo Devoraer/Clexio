@@ -1,3 +1,5 @@
+// 📁 MachinesDashboard.tsx
+
 import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
@@ -15,7 +17,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  IconButton
+  IconButton,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
@@ -113,8 +115,10 @@ const MachinesDashboard = () => {
   const [openAddDialog, setOpenAddDialog] = useState(false);
 
   const location = useLocation();
+
   const params = new URLSearchParams(location.search);
   const highlightedId = params.get("highlight") ?? "";
+
 
   const machineRefs = useRef<{ [id: string]: HTMLDivElement | null }>({});
 
@@ -171,15 +175,7 @@ const MachinesDashboard = () => {
     .sort((a, b) => getPriority(a.calibrationInfo.chipLabel) - getPriority(b.calibrationInfo.chipLabel));
 
   return (
-    <Box sx={{ padding: 4, backgroundColor: "#f5f7fb", width: "95%", boxSizing: "border-box" }}>
-      <style>{`
-        @keyframes highlightFlash {
-          0% { box-shadow: 0 0 0px #f57c00; }
-          50% { box-shadow: 0 0 12px 6px #f57c00; }
-          100% { box-shadow: 0 0 0px #f57c00; }
-        }
-      `}</style>
-
+    <Box sx={{ padding: 4, backgroundColor: "#f5f7fb", width: "100%", boxSizing: "border-box" }}>
       <Typography variant="body1" sx={{ mb: 3, textAlign: "left" }}>
         Total machines loaded: {machines.length}
       </Typography>
@@ -233,26 +229,27 @@ const MachinesDashboard = () => {
                 transition: "all 0.3s ease-in-out",
               }}
             >
+              <CardContent sx={{ px: 2, pt: 2, pb: 2, flexGrow: 1 }}>
+                <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 1 }}>
+                  <Chip
+                    label={chipLabel}
+                    size="small"
+                    sx={{
+                      borderRadius: "999px",
+                      fontSize: "0.75rem",
+                      px: 2,
+                      fontWeight: "bold",
+                      color: "white",
+                      backgroundColor:
+                        chipColor === "success"
+                          ? "#2e7d32"
+                          : chipColor === "warning"
+                            ? "#ed6c02"
+                            : "#d32f2f",
+                      }}
+                    />
+                  </Box>
 
-              <CardContent sx={{ px: 2, pt: 5, pb: 2, flexGrow: 1 }}>
-                <Chip
-                  label={chipLabel}
-                  size="small"
-                  sx={{
-                    mb: 1,
-                    borderRadius: "999px",
-                    fontSize: "0.75rem",
-                    px: 2,
-                    fontWeight: "bold",
-                    color: "white",
-                    backgroundColor:
-                      chipColor === "success"
-                        ? "#2e7d32"
-                        : chipColor === "warning"
-                          ? "#ed6c02"
-                          : "#d32f2f",
-                  }}
-                />
 
                 <Typography variant="subtitle1" fontWeight="bold" color="primary" align="left">
                   {machine["Instrument ID"]}

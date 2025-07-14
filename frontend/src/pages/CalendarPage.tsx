@@ -1,4 +1,4 @@
-// ✅ CalendarPage.tsx – כולל תצוגת דיאלוג לפני ניווט לדשבורד המתאים + הדגשת חומר/מכונה רלוונטיים
+// ✅ CalendarPage.tsx – כולל תמיכה מלאה ב־_seconds, toDate ו־מחרוזות
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import {
@@ -10,8 +10,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  List,
-  ListItem,
   Button,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBackIos";
@@ -29,11 +27,14 @@ const CalendarPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get("http://localhost:3000/api/alerts/comingSoon").then((res) => {
-      const data = res.data;
+    const fetchAlerts = async () => {
+      const resMaterials = await axios.get("http://localhost:3000/api/alerts/comingSoon");
+      const resMachines = await axios.get("http://localhost:3000/api/machines/all");
+
       const formattedAlerts: { [date: string]: string[] } = {};
 
-      data.forEach((alert: any) => {
+      // 🧪 חומרים
+      resMaterials.data.forEach((alert: any) => {
         let dateObj: dayjs.Dayjs | null = null;
 
         if (typeof alert.dueDate === "string" && alert.dueDate.includes("/")) {
@@ -60,8 +61,48 @@ const CalendarPage = () => {
         formattedAlerts[dateKey].push(label);
       });
 
+      // 🛠 מכונות
+      resMachines.data.forEach((machine: any) => {
+        const addMachineAlert = (rawDate: any, status: string) => {
+          let dateObj: dayjs.Dayjs;
+
+          if (rawDate?.toDate) {
+            dateObj = dayjs(rawDate.toDate());
+          } else if (rawDate?._seconds) {
+            dateObj = dayjs(new Date(rawDate._seconds * 1000));
+          } else if (typeof rawDate === "string" && rawDate.includes("/")) {
+            const [day, month, year] = rawDate.split("/").map(Number);
+            dateObj = dayjs(new Date(year, month - 1, day));
+          } else {
+            dateObj = dayjs(rawDate);
+          }
+
+          if (!dateObj.isValid()) return;
+
+          const dateKey = dateObj.format("YYYY-MM-DD");
+          const label = `${status}::${machine["Instrument ID"]}::${machine.ID}`;
+
+          if (!formattedAlerts[dateKey]) formattedAlerts[dateKey] = [];
+          formattedAlerts[dateKey].push(label);
+        };
+
+        if (machine["Calibration Date"]) {
+          addMachineAlert(machine["Calibration Date"], "Calibration Performed");
+        }
+
+        if (Array.isArray(machine["CalibrationHistory"])) {
+          machine["CalibrationHistory"].forEach((entry: any) => {
+            if (entry?.date) {
+              addMachineAlert(entry.date, "Calibration History");
+            }
+          });
+        }
+      });
+
       setAlertsByDate(formattedAlerts);
-    });
+    };
+
+    fetchAlerts();
   }, []);
 
   const startOfMonth = currentDate.startOf("month");
@@ -92,14 +133,15 @@ const CalendarPage = () => {
     calendarMatrix.push(Array(7).fill(null));
   }
 
-  const handleNavigation = (type: string, name: string, id: string) => {
+ const handleNavigation = (type: string, name: string, id: string) => {
     if (type.includes("Material")) {
-      navigate("/materials", { state: { highlightName: name.trim(), highlightId: id.trim() } });
-    } else if (type.includes("Calibration")) {
-      navigate("/machines", { state: { highlightName: name.trim(), highlightId: id.trim() } });
+        navigate(`/materials?highlight=${id}`); // 👈 כאן העדכון
+    } else {
+        navigate(`/machines?highlight=${id}`);
     }
     setOpenDialog(false);
-  };
+    };
+
 
   return (
     <Box
@@ -202,26 +244,56 @@ const CalendarPage = () => {
 
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} fullWidth maxWidth="xs">
         <DialogTitle>Alerts for {selectedDate}</DialogTitle>
-        <DialogContent>
-          {selectedAlerts.map((alert, idx) => {
-            const [type, name, id] = alert.split("::");
-            return (
-              <Box key={idx} mb={1}>
-                <Typography mb={1}>
-                  {type}: <strong>{name}</strong>
-                </Typography>
-                <Button
-                  variant="contained"
-                  size="small"
-                  sx={{ textTransform: "none" }}
-                  onClick={() => handleNavigation(type, name, id)}
+            <DialogContent>
+            {selectedAlerts.map((alert, idx) => {
+                const [type, name, id] = alert.split("::");
+
+                const isMaterial = type.includes("Material");
+                const status = type.replace("Material ", "").replace("Calibration ", "");
+                const color =
+                status.toLowerCase().includes("expired") ? "error" :
+                status.toLowerCase().includes("due") ? "warning" :
+                status.toLowerCase().includes("performed") ? "success" :
+                "default";
+
+                return (
+                <Box
+                    key={idx}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    mb={1}
+                    p={1.2}
+                    border="1px solid #ddd"
+                    borderRadius={2}
+                    bgcolor="#f9f9f9"
                 >
-                  Go to {type === "Material Expired" || type === "Material Expiry Soon" ? "Materials" : "Machines"} Dashboard
-                </Button>
-              </Box>
-            );
-          })}
-        </DialogContent>
+                    <Box>
+                    <Typography fontWeight={600} fontSize={14}>
+                        {isMaterial ? "🧪 Material" : "🛠 Machine"}: {name}
+                    </Typography>
+                    <Chip
+                        label={status}
+                        color={color as any}
+                        size="small"
+                        sx={{ mt: 0.5 }}
+                    />
+                    </Box>
+
+                    <Button
+                    variant="outlined"
+                    size="small"
+                    sx={{ ml: 1, textTransform: "none" }}
+                    onClick={() => handleNavigation(type, name, id)}
+                    >
+                    View
+                    </Button>
+                </Box>
+                );
+            })}
+            </DialogContent>
+
+
       </Dialog>
     </Box>
   );

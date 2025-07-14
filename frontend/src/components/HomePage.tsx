@@ -241,7 +241,7 @@ export default function HomePage() {
             p: 2,
           }}
         >
-          <Typography variant="h5" mb={2} textAlign="center" color="primary">
+          <Typography variant="h5" mb={2} textAlign="center" sx={{ color: "#1976d2" }} >
             🔔 Urgent Alerts
           </Typography>
           <UpcomingRemindersTable />

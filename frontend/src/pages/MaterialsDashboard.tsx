@@ -243,6 +243,7 @@ const MaterialsDashboard = () => {
                   maxWidth: 260,
                   border: isHighlighted ? "3px solid #1565c0" : "none",
                   transition: "all 0.3s ease-in-out",
+                  height: "100%", // 💡 חשוב: מאפשר גובה אחיד
                   ...(isDisabled && {
                     "&:hover": { cursor: "not-allowed" },
                     opacity: 0.4,
@@ -250,65 +251,82 @@ const MaterialsDashboard = () => {
                   }),
                 }}
               >
-                <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-                  <CardContent sx={{ flexGrow: 1, textAlign: "left" }}>
-                    <Chip label={expiry.status} color={expiry.color as any} sx={{ mb: 1, width: 120, height: 24 }} />
-                    <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>
-                      {material.name}
-                    </Typography>
-                    <Typography>ID: {material.ID}</Typography>
-                    <Typography>
-                      Amount: {material.amount} {material.unit}
-                    </Typography>
-                    <Typography>Expiry Date: {material.expirationDate}</Typography>
+                <CardContent sx={{ flexGrow: 1, textAlign: "left" }}>
+                  <Chip label={expiry.status} color={expiry.color as any} 
+                    sx={{
+                      mb: 1,
+                      height: 28,
+                      fontSize: "0.9rem",
+                      fontWeight: "bold"
+                    }}/>
+                  <Typography variant="body1" 
+                    sx={{
+                      color: "#0288d1",
+                      fontWeight: "bold",
+                      fontSize: "1rem",
+                      wordBreak: "break-word",  // ✨ זה מאפשר לשמות להתפצל שורה
+                      whiteSpace: "normal",     // ✨ מונע חיתוך מוקדם
+                    }}>
+                    {material.name}
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.85rem" }}>ID: {material.ID}</Typography>
+                  <Typography sx={{ fontSize: "0.85rem" }}>
+                    Amount: {material.amount} {material.unit}
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.85rem" }}>Expiry Date: {material.expirationDate}</Typography>
 
-                    <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                      <Box mt={2}>
-                        {material.location && <Typography>Location: {material.location}</Typography>}
-                        {material.lot && <Typography>Lot: {material.lot}</Typography>}
-                        {material.vendor && <Typography>Vendor: {material.vendor}</Typography>}
-                        {material.casNumber && <Typography>CAS Number: {material.casNumber}</Typography>}
-                        {material.msds && <Typography>MSDS: {material.msds}</Typography>}
-                        {material.coa && <Typography>CoA: {material.coa}</Typography>}
-                        <Typography>No: {material.classification}</Typography>
-                      </Box>
-                    </Collapse>
-
-                    <Box sx={{ mt: "auto", pt: 2 }}>
-                      <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-start">
-                        <TextField
-                          label="Amount"
-                          size="small"
-                          value={updateAmounts[material.ID] || ""}
-                          onChange={(e) =>
-                            setUpdateAmounts((prev) => ({ ...prev, [material.ID]: e.target.value }))
-                          }
-                          error={!!errors[material.ID]}
-                          helperText={errors[material.ID] || ""}
-                          sx={{ width: 90 }}
-                        />
-
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => handleUpdateAmount(material.ID, material.amount)}
-                        >
-                          Update
-                        </Button>
-
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          endIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                          onClick={() => toggleExpand(material.ID)}
-                        >
-                          Expand
-                        </Button>
-                      </Stack>
+                  <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                    <Box mt={2}>
+                      {material.location && <Typography sx={{ fontSize: "0.85rem" }}>Location: {material.location}</Typography>}
+                      {material.lot && <Typography sx={{ fontSize: "0.85rem" }}>Lot: {material.lot}</Typography>}
+                      {material.vendor && <Typography sx={{ fontSize: "0.85rem" }}>Vendor: {material.vendor}</Typography>}
+                      {material.casNumber && <Typography sx={{ fontSize: "0.85rem" }}>CAS Number: {material.casNumber}</Typography>}
+                      {material.msds && <Typography sx={{ fontSize: "0.85rem" }}>MSDS: {material.msds}</Typography>}
+                      {material.coa && <Typography sx={{ fontSize: "0.85rem" }}>CoA: {material.coa}</Typography>}
+                      <Typography sx={{ fontSize: "0.85rem" }}>No: {material.classification}</Typography>
                     </Box>
-                  </CardContent>
+                  </Collapse>
+                </CardContent>
+
+                {/* 🧷 כאן הכפתורים תמיד בתחתית הכרטיס */}
+                <Box sx={{ px: 2, pb: 2, pt: 1 }}>
+                  <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-start">
+                    <TextField
+                      label="Amount"
+                      size="small"
+                      value={updateAmounts[material.ID] || ""}
+                      onChange={(e) =>
+                        setUpdateAmounts((prev) => ({ ...prev, [material.ID]: e.target.value }))
+                      }
+                      error={!!errors[material.ID]}
+                      helperText={errors[material.ID] || ""}
+                      sx={{
+                        width: 90,
+                        "& label": { fontSize: "0.65rem" },
+                        "& input": { fontSize: "0.65rem" },
+                      }}
+                    />
+
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => handleUpdateAmount(material.ID, material.amount)}
+                    >
+                      Update
+                    </Button>
+
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      endIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                      onClick={() => toggleExpand(material.ID)}
+                    >
+                      Expand
+                    </Button>
+                  </Stack>
                 </Box>
               </Card>
+
             </Tooltip>
           );
         })}
