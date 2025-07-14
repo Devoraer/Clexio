@@ -1,31 +1,55 @@
-import React from "react";
-import { Box, Typography, Avatar } from "@mui/material";
-import ScienceIcon from '@mui/icons-material/Science'; 
+// AuthUtils.ts - Simple authentication utilities
+export const AuthUtils = {
+  // Check if user is authenticated
+  isAuthenticated: (): boolean => {
+    return localStorage.getItem("isAuthenticated") === "true";
+  },
 
-export default function LoginPage() {
-  return (
-    <Box 
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      sx={{
-        direction: "rtl",  // יישור לימין
-        textAlign: "center", // כל הטקסט מיושר למרכז
-        mt: 8 // מרווח עליון – Margin Top
-      }}
-    >
-      <Avatar sx={{ bgcolor: "primary.main", width: 56, height: 56 }}>
-        <ScienceIcon />
-      </Avatar>
+  // Get current username
+  getUsername: (): string | null => {
+    return localStorage.getItem("username");
+  },
 
-      <Typography variant="h4" mt={2}>
-        Smart Lab
-      </Typography>
+  // Login user
+  login: (username: string): void => {
+    localStorage.setItem("isAuthenticated", "true");
+    localStorage.setItem("username", username);
+  },
 
-      <Typography variant="subtitle1" color="text.secondary">
-        התחבר למערכת ניהול המעבדה
-      </Typography>
-    </Box>
-  );
+  // Logout user
+  logout: (): void => {
+    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("username");
+  },
+
+  // Check credentials
+  validateCredentials: (username: string, password: string): boolean => {
+    return username === "admin" && password === "admin";
+  }
+};
+
+// ProtectedRoute.tsx - Component to protect routes
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AuthUtils } from './AuthUtils';
+
+interface ProtectedRouteProps {
+  children: React.ReactNode;
 }
+
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!AuthUtils.isAuthenticated()) {
+      navigate('/');
+    }
+  }, [navigate]);
+
+  // Show loading or redirect logic
+  if (!AuthUtils.isAuthenticated()) {
+    return null; // or a loading spinner
+  }
+
+  return <>{children}</>;
+};
