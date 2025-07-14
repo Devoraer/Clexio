@@ -1,4 +1,5 @@
-// ✅ MaterialsDashboard.tsx – with tooltip message on disabled expired cards
+// 📁 MaterialsDashboard.tsx
+
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -18,6 +19,7 @@ import AddIcon from "@mui/icons-material/Add";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import { useLocation } from "react-router-dom";
 import axios from "axios";
 import AddMaterialDialog from "../components/AddMaterialDialog";
 
@@ -47,6 +49,10 @@ const MaterialsDashboard = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const openMenu = Boolean(anchorEl);
 
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const highlightedId = params.get("highlight") ?? "";
+
   const fetchMaterials = async () => {
     try {
       const response = await axios.get("http://localhost:3000/api/materials");
@@ -73,6 +79,15 @@ const MaterialsDashboard = () => {
   useEffect(() => {
     fetchMaterials();
   }, []);
+
+  useEffect(() => {
+    if (highlightedId) {
+      const el = document.getElementById(`material-${highlightedId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [materials, highlightedId]);
 
   const checkExpiryStatus = (dateStr: string) => {
     try {
@@ -105,30 +120,25 @@ const MaterialsDashboard = () => {
   const showDisabledList = findExpiredWithValidCopies(materials);
 
   const handleUpdateAmount = async (id: string, currentAmount: number) => {
-  const newAmountStr = updateAmounts[id];
-  const newAmount = parseFloat(newAmountStr);
-
-  // 🛑 בדיקה שהמספר חוקי
-  if (isNaN(newAmount) || newAmount < 0) {
-    setErrors((prev) => ({ ...prev, [id]: "Enter a valid amount" }));
-    return;
-  }
-
-  // ❗ בדיקה שהוא קטן מהכמות הנוכחית
-  if (newAmount >= currentAmount) {
-    setErrors((prev) => ({ ...prev, [id]: `Must be less than ${currentAmount}` }));
-    return;
-  }
-
-  try {
-    await axios.put(`http://localhost:3000/api/materials/${id}/amount`, { amount: newAmount });
-    setMaterials((prev) => prev.map((m) => (m.ID === id ? { ...m, amount: newAmount } : m)));
-    setUpdateAmounts((prev) => ({ ...prev, [id]: "" }));
-    setErrors((prev) => ({ ...prev, [id]: "" }));
-  } catch (err) {
-    console.error("❌ Update error:", err);
-  }
-};
+    const newAmountStr = updateAmounts[id];
+    const newAmount = parseFloat(newAmountStr);
+    if (isNaN(newAmount) || newAmount < 0) {
+      setErrors((prev) => ({ ...prev, [id]: "Enter a valid amount" }));
+      return;
+    }
+    if (newAmount >= currentAmount) {
+      setErrors((prev) => ({ ...prev, [id]: `Must be less than ${currentAmount}` }));
+      return;
+    }
+    try {
+      await axios.put(`http://localhost:3000/api/materials/${id}/amount`, { amount: newAmount });
+      setMaterials((prev) => prev.map((m) => (m.ID === id ? { ...m, amount: newAmount } : m)));
+      setUpdateAmounts((prev) => ({ ...prev, [id]: "" }));
+      setErrors((prev) => ({ ...prev, [id]: "" }));
+    } catch (err) {
+      console.error("❌ Update error:", err);
+    }
+  };
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) =>
@@ -149,8 +159,16 @@ const MaterialsDashboard = () => {
     });
 
   return (
-    <Box sx={{ padding: 4, backgroundColor: "#f5f7fb", width: "100vw", overflowX: "hidden", boxSizing: "border-box" }}>
-      <Typography variant="body1" sx={{ mb: 3 }}>
+    <Box
+      sx={{
+        padding: 4,
+        backgroundColor: "#f5f7fb",
+        width: "93%",
+        overflowX: "hidden",
+        minHeight: "100vh",
+      }}
+    >
+      <Typography variant="body1" sx={{ mb: 3, textAlign: "left" }}>
         Total materials loaded: {materials.length}
       </Typography>
 
@@ -182,9 +200,8 @@ const MaterialsDashboard = () => {
           size="small"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          sx={{ width: 910 }}
+          sx={{ flexGrow: 1, minWidth: 300 }}
         />
-    
       </Stack>
 
       <AddMaterialDialog open={open} onClose={() => setOpen(false)} onSuccess={fetchMaterials} />
@@ -192,19 +209,18 @@ const MaterialsDashboard = () => {
       <Box
         sx={{
           display: "grid",
-          gap: 3,
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(2, 1fr)",
-            md: "repeat(3, 1fr)",
-            lg: "repeat(4, 1fr)",
-          },
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 2,
+          justifyItems: "center",
+          maxWidth: "820px",
+          margin: "0 auto",
         }}
       >
         {filteredMaterials.map((material) => {
           const expiry = checkExpiryStatus(material.expirationDate);
           const isExpanded = expandedIds.includes(material.ID);
           const isDisabled = expiry.status === "Expired" && showDisabledList.includes(material.name);
+          const isHighlighted = material.ID === highlightedId;
 
           return (
             <Tooltip
@@ -215,22 +231,28 @@ const MaterialsDashboard = () => {
               disableHoverListener={!isDisabled}
             >
               <Card
+                id={`material-${material.ID}`}
                 sx={{
                   borderRadius: 4,
                   boxShadow: 3,
                   bgcolor: "#ffffff",
                   position: "relative",
-                  height: "100%", // ✅ חשוב
                   display: "flex",
                   flexDirection: "column",
+                  width: "100%",
+                  maxWidth: 260,
+                  border: isHighlighted ? "3px solid #1565c0" : "none",
+                  transition: "all 0.3s ease-in-out",
                   ...(isDisabled && {
                     "&:hover": { cursor: "not-allowed" },
+                    opacity: 0.4,
+                    pointerEvents: "none",
                   }),
                 }}
               >
-                <Box sx={isDisabled ? { pointerEvents: "none", opacity: 0.4 } : { height: "100%", display: "flex", flexDirection: "column" }}>
-                  <CardContent sx={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
-                    <Chip label={expiry.status} color={expiry.color as any} sx={{ mb: 1, width: 120,height: 24, justifyContent: "center" }} />
+                <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                  <CardContent sx={{ flexGrow: 1, textAlign: "left" }}>
+                    <Chip label={expiry.status} color={expiry.color as any} sx={{ mb: 1, width: 120, height: 24 }} />
                     <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>
                       {material.name}
                     </Typography>
@@ -252,10 +274,9 @@ const MaterialsDashboard = () => {
                       </Box>
                     </Collapse>
 
-                    {/* ✅ זה שומר את שורת הכפתורים בתחתית */}
                     <Box sx={{ mt: "auto", pt: 2 }}>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                       <TextField
+                      <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-start">
+                        <TextField
                           label="Amount"
                           size="small"
                           value={updateAmounts[material.ID] || ""}
@@ -264,9 +285,6 @@ const MaterialsDashboard = () => {
                           }
                           error={!!errors[material.ID]}
                           helperText={errors[material.ID] || ""}
-                          FormHelperTextProps={{
-                            sx: { whiteSpace: "nowrap", fontSize: "0.75rem", marginLeft: 0 },
-                          }}
                           sx={{ width: 90 }}
                         />
 
@@ -291,7 +309,6 @@ const MaterialsDashboard = () => {
                   </CardContent>
                 </Box>
               </Card>
-
             </Tooltip>
           );
         })}

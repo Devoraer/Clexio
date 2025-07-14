@@ -1,6 +1,4 @@
-// 📁 src/pages/MachinesDashboard.tsx
-
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   Card,
@@ -28,11 +26,12 @@ import axios from "axios";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import AddMachineDialog from "../components/AddMachineDialog";
+import { useLocation } from "react-router-dom";
 
 dayjs.extend(customParseFormat);
 
 interface Machine {
-  ID: string;
+  ID: string | number;
   "Instrument ID": string;
   "Calibration Date": any;
   "Calibration interval": string;
@@ -113,9 +112,26 @@ const MachinesDashboard = () => {
   const [openSuccessDialog, setOpenSuccessDialog] = useState(false);
   const [openAddDialog, setOpenAddDialog] = useState(false);
 
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const highlightedId = params.get("highlight") ?? "";
+
+  const machineRefs = useRef<{ [id: string]: HTMLDivElement | null }>({});
+
   useEffect(() => {
     fetchMachines();
   }, []);
+
+  useEffect(() => {
+    if (highlightedId && machineRefs.current[String(highlightedId)]) {
+      setTimeout(() => {
+        machineRefs.current[String(highlightedId)]?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 300);
+    }
+  }, [machines, highlightedId]);
 
   const fetchMachines = async () => {
     const res = await axios.get("http://localhost:3000/api/machines/all");
@@ -155,8 +171,16 @@ const MachinesDashboard = () => {
     .sort((a, b) => getPriority(a.calibrationInfo.chipLabel) - getPriority(b.calibrationInfo.chipLabel));
 
   return (
-    <Box sx={{ padding: 4, backgroundColor: "#f5f7fb", width: "100vw", overflowX: "hidden", boxSizing: "border-box" }}>
-      <Typography variant="body1" sx={{ mb: 3 }}>
+    <Box sx={{ padding: 4, backgroundColor: "#f5f7fb", width: "95%", boxSizing: "border-box" }}>
+      <style>{`
+        @keyframes highlightFlash {
+          0% { box-shadow: 0 0 0px #f57c00; }
+          50% { box-shadow: 0 0 12px 6px #f57c00; }
+          100% { box-shadow: 0 0 0px #f57c00; }
+        }
+      `}</style>
+
+      <Typography variant="body1" sx={{ mb: 3, textAlign: "left" }}>
         Total machines loaded: {machines.length}
       </Typography>
 
@@ -179,24 +203,15 @@ const MachinesDashboard = () => {
           size="small"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ width: 930 }}
+          sx={{ width: 400 }}
         />
       </Stack>
 
-      <Box
-        sx={{
-          display: "grid",
-          gap: 3,
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(2, 1fr)",
-            md: "repeat(3, 1fr)",
-            lg: "repeat(4, 1fr)",
-          },
-        }}
-      >
+      <Box sx={{ display: "grid", gap: 3, gridTemplateColumns: "repeat(3, 1fr)" }}>
         {sortedMachines.map((machine) => {
           const { nextCalibration, chipLabel, chipColor } = machine.calibrationInfo;
+          const idStr = String(machine.ID);
+          const isHighlighted = idStr === highlightedId;
 
           if (
             (filter !== "All" && chipLabel !== filter) ||
@@ -207,29 +222,25 @@ const MachinesDashboard = () => {
           const calibrationDateStr = parseDateSmart(machine["Calibration Date"])?.format("DD/MM/YYYY") ?? "Invalid";
 
           return (
-           <Card
-              key={machine.ID}
+            <Card
+              key={idStr}
+              ref={(el) => (machineRefs.current[idStr] = el)}
               sx={{
-                borderRadius: 4,
-                boxShadow: 3,
+                borderRadius: 3,
+                boxShadow: 4,
                 bgcolor: "#ffffff",
-                position: "relative",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                height: "100%",
+                border: isHighlighted ? "3px solid #0D47A1" : "none",
+                transition: "all 0.3s ease-in-out",
               }}
             >
-              <CardContent sx={{ px: 2, pt: 6, pb: 2, flexGrow: 1 }}>
+
+              <CardContent sx={{ px: 2, pt: 5, pb: 2, flexGrow: 1 }}>
                 <Chip
                   label={chipLabel}
                   size="small"
                   sx={{
-                    position: "absolute",
-                    top: 12,
-                    left: 12,
+                    mb: 1,
                     borderRadius: "999px",
-                    height: 24,
                     fontSize: "0.75rem",
                     px: 2,
                     fontWeight: "bold",
@@ -238,52 +249,50 @@ const MachinesDashboard = () => {
                       chipColor === "success"
                         ? "#2e7d32"
                         : chipColor === "warning"
-                        ? "#ed6c02"
-                        : "#d32f2f",
+                          ? "#ed6c02"
+                          : "#d32f2f",
                   }}
                 />
 
-                <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                <Typography variant="subtitle1" fontWeight="bold" color="primary" align="left">
                   {machine["Instrument ID"]}
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" align="left">
                   Calibration Date: {calibrationDateStr}
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" align="left">
                   Interval: {machine["Calibration interval"]}
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" align="left">
                   Next Calibration: {nextCalibration}
                 </Typography>
 
-                {/* 🧩 הפרטים הנוספים שנפתחים למעלה */}
-                <Collapse in={expandedCard === machine.ID}>
+                <Collapse in={expandedCard === idStr}>
                   <Box mt={1}>
-                    <Typography variant="body2">ID: {machine.ID}</Typography>
-                    <Typography variant="body2">
+                    <Typography variant="body2" align="left">ID: {machine.ID}</Typography>
+                    <Typography variant="body2" align="left">
                       Department: {machine.Department || "—"}
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant="body2" align="left">
                       Location: {machine.Location || "—"}
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant="body2" align="left">
                       Type: {machine["Instrument type"] || "—"}
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant="body2" align="left">
                       Calibrated by: {machine["Calibrated by"] || "—"}
                     </Typography>
                   </Box>
                 </Collapse>
               </CardContent>
 
-              {/* 🧷 הכפתורים תמיד בתחתית */}
               <Box px={2} pb={2}>
                 <Stack direction="row" spacing={1}>
                   <Button
                     variant="outlined"
                     size="small"
                     disabled={!isUpdatable}
-                    sx={{ fontSize: '0.65rem' }}  
+                    sx={{ fontSize: '0.65rem' }}
                     onClick={() => handleUpdateCalibration(machine)}
                   >
                     Calibration Is Done
@@ -292,17 +301,14 @@ const MachinesDashboard = () => {
                   <Button
                     variant="outlined"
                     size="small"
-                    endIcon={
-                      expandedCard === machine.ID ? <ExpandLessIcon /> : <ExpandMoreIcon />
-                    }
-                    onClick={() => toggleExpand(machine.ID)}
+                    endIcon={expandedCard === idStr ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                    onClick={() => toggleExpand(idStr)}
                   >
                     Expand
                   </Button>
                 </Stack>
               </Box>
             </Card>
-
           );
         })}
       </Box>

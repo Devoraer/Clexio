@@ -28,11 +28,10 @@ app.use("/api/samples", samplesRouter);
 app.use("/api/machines", machinesRouter);
 app.use("/api/stability-checklist", stabilityChecklistRouter);
 app.use("/api/raw", rawRouter);
+app.use("/api/alerts", alertsRouter);
 
 // ✅ חיבור ה־alertsRouter
 try {
-  const alertsRouter = require("./alerts");
-  app.use("/api/alerts", alertsRouter);
   console.log("✅ alertsRouter loaded");
 } catch (err) {
   console.error("❌ Failed to load alertsRouter:", err.message);
