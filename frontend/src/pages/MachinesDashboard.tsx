@@ -24,6 +24,7 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import NoteAltIcon from "@mui/icons-material/NoteAlt";
 import axios from "axios";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -113,12 +114,12 @@ const MachinesDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [openSuccessDialog, setOpenSuccessDialog] = useState(false);
   const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [openNoteDialog, setOpenNoteDialog] = useState<string | null>(null);
+  const [sampleComments, setSampleComments] = useState<any[]>([]);
 
   const location = useLocation();
-
   const params = new URLSearchParams(location.search);
   const highlightedId = params.get("highlight") ?? "";
-
 
   const machineRefs = useRef<{ [id: string]: HTMLDivElement | null }>({});
 
@@ -164,6 +165,19 @@ const MachinesDashboard = () => {
     } catch (error) {
       console.error("Update failed:", error);
       alert("Failed to update calibration.");
+    }
+  };
+
+  const fetchCommentsForMachine = async (instrumentId: string) => {
+    try {
+      const res = await axios.get("http://localhost:3000/api/samples/all");
+      const matching = res.data.filter((s: any) => s.MachineMade === instrumentId);
+      setSampleComments(matching);
+      setOpenNoteDialog(instrumentId);
+    } catch (err) {
+      console.error("Failed to fetch sample comments:", err);
+      setSampleComments([{ comment: "⚠️ Error loading comments" }]);
+      setOpenNoteDialog(instrumentId);
     }
   };
 
@@ -227,9 +241,24 @@ const MachinesDashboard = () => {
                 bgcolor: "#ffffff",
                 border: isHighlighted ? "3px solid #0D47A1" : "none",
                 transition: "all 0.3s ease-in-out",
+                position: "relative"
               }}
             >
-              <CardContent sx={{ px: 2, pt: 2, pb: 2, flexGrow: 1 }}>
+              <IconButton
+                onClick={() => fetchCommentsForMachine(machine["Instrument ID"])}
+                sx={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  backgroundColor: "#e3f2fd",
+                  '&:hover': { backgroundColor: "#bbdefb" }
+                }}
+                size="small"
+              >
+                <NoteAltIcon fontSize="small" />
+              </IconButton>
+
+              <CardContent sx={{ px: 2, pt: 2, pb: 2 }}>
                 <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 1 }}>
                   <Chip
                     label={chipLabel}
@@ -246,10 +275,9 @@ const MachinesDashboard = () => {
                           : chipColor === "warning"
                             ? "#ed6c02"
                             : "#d32f2f",
-                      }}
-                    />
-                  </Box>
-
+                    }}
+                  />
+                </Box>
 
                 <Typography variant="subtitle1" fontWeight="bold" color="primary" align="left">
                   {machine["Instrument ID"]}
@@ -267,18 +295,10 @@ const MachinesDashboard = () => {
                 <Collapse in={expandedCard === idStr}>
                   <Box mt={1}>
                     <Typography variant="body2" align="left">ID: {machine.ID}</Typography>
-                    <Typography variant="body2" align="left">
-                      Department: {machine.Department || "—"}
-                    </Typography>
-                    <Typography variant="body2" align="left">
-                      Location: {machine.Location || "—"}
-                    </Typography>
-                    <Typography variant="body2" align="left">
-                      Type: {machine["Instrument type"] || "—"}
-                    </Typography>
-                    <Typography variant="body2" align="left">
-                      Calibrated by: {machine["Calibrated by"] || "—"}
-                    </Typography>
+                    <Typography variant="body2" align="left">Department: {machine.Department || "—"}</Typography>
+                    <Typography variant="body2" align="left">Location: {machine.Location || "—"}</Typography>
+                    <Typography variant="body2" align="left">Type: {machine["Instrument type"] || "—"}</Typography>
+                    <Typography variant="body2" align="left">Calibrated by: {machine["Calibrated by"] || "—"}</Typography>
                   </Box>
                 </Collapse>
               </CardContent>
@@ -309,6 +329,38 @@ const MachinesDashboard = () => {
           );
         })}
       </Box>
+
+      <Dialog open={!!openNoteDialog} onClose={() => setOpenNoteDialog(null)}>
+        <DialogTitle>Machine Notes - {openNoteDialog}</DialogTitle>
+        <DialogContent dividers>
+          {sampleComments.length === 0 ? (
+            <Typography>No comments found.</Typography>
+          ) : (
+            <Box>
+              {sampleComments.map((sample: any, index: number) => (
+                <Box key={index} sx={{ mb: 1.5 }}>
+                  <Typography variant="body2">
+                    <strong>Sample:</strong> {sample.sampleName || "Unnamed"}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Comment:</strong> {sample.comment || "—"}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Received by:</strong> {sample.receivedBy || "—"}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Date:</strong> {sample.dateOfReceipt || "—"}
+                  </Typography>
+                  <hr style={{ margin: '8px 0', borderColor: '#eee' }} />
+                </Box>
+              ))}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenNoteDialog(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={openSuccessDialog} onClose={() => setOpenSuccessDialog(false)}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

@@ -1,4 +1,4 @@
-//machine.js
+// 📁 backend/machine.js
 const express = require("express");
 const { db } = require("./firebase");
 const admin = require("firebase-admin");
@@ -7,6 +7,9 @@ const dayjs = require("dayjs");
 const machinesRouter = express.Router();
 const collectionName = "Machines";
 
+//
+// 🔢 שליפת מזהה ID הבא
+//
 machinesRouter.get("/next-id", async (req, res) => {
   try {
     const counterRef = db.collection("IdCounters").doc("MachinesId");
@@ -19,14 +22,16 @@ machinesRouter.get("/next-id", async (req, res) => {
   }
 });
 
+//
+// 📋 שליפת כל המכונות עם תאריכים מעוצבים
+//
 machinesRouter.get("/all", async (req, res) => {
   try {
     const snapshot = await db.collection(collectionName).get();
     const result = snapshot.docs.map((doc) => {
       const data = doc.data();
 
-      const calibrationDateFormatted = (() => {
-        const raw = data["Calibration Date"];
+      const formatDate = (raw) => {
         if (typeof raw === "object" && typeof raw.toDate === "function") {
           return dayjs(raw.toDate()).format("DD/MM/YYYY");
         } else if (typeof raw === "string") {
@@ -34,24 +39,13 @@ machinesRouter.get("/all", async (req, res) => {
           return parsed.isValid() ? parsed.format("DD/MM/YYYY") : "Invalid";
         }
         return "Invalid";
-      })();
-
-      const nextCalibrationFormatted = (() => {
-        const raw = data["Next Calibration"];
-        if (raw && typeof raw.toDate === "function") {
-          return dayjs(raw.toDate()).format("DD/MM/YYYY");
-        } else if (typeof raw === "string") {
-          const parsed = dayjs(raw, ["DD/MM/YYYY", "D/M/YYYY", "YYYY-MM-DD"], true);
-          return parsed.isValid() ? parsed.format("DD/MM/YYYY") : raw;
-        }
-        return "Invalid";
-      })();
+      };
 
       return {
         ID: doc.id,
         ...data,
-        "Calibration Date": calibrationDateFormatted,
-        "Next Calibration": nextCalibrationFormatted,
+        "Calibration Date": formatDate(data["Calibration Date"]),
+        "Next Calibration": formatDate(data["Next Calibration"]),
         CalibrationHistory: data.CalibrationHistory || [],
       };
     });
@@ -63,15 +57,25 @@ machinesRouter.get("/all", async (req, res) => {
   }
 });
 
+//
+// 🔍 שליפת מכונה לפי ID
+//
 machinesRouter.get("/info/:id", async (req, res) => {
   const { id } = req.params;
-  const result = await db.collection(collectionName).doc(id).get();
-  const parsedResult = result.data();
-
-  if (parsedResult) res.status(200).send(parsedResult);
-  else res.status(204).send();
+  try {
+    const result = await db.collection(collectionName).doc(id).get();
+    const data = result.data();
+    if (data) res.status(200).send(data);
+    else res.status(204).send();
+  } catch (error) {
+    console.error("Failed to fetch machine info:", error);
+    res.status(500).send({ error: "Failed to fetch machine info" });
+  }
 });
 
+//
+// 📊 סיכום: כמות מכונות + פגי תוקף
+//
 machinesRouter.get("/summary", async (req, res) => {
   try {
     const snapshot = await db.collection(collectionName).get();
@@ -87,23 +91,19 @@ machinesRouter.get("/summary", async (req, res) => {
       if (!calDateRaw || !intervalRaw) return;
 
       const interval = parseInt(intervalRaw.toLowerCase().replace("m", ""));
-      let baseDate;
+      let baseDate = dayjs(null); // ✅ תקין
 
       if (typeof calDateRaw === "object" && typeof calDateRaw.toDate === "function") {
         baseDate = dayjs(calDateRaw.toDate());
       } else if (typeof calDateRaw === "string") {
         baseDate = dayjs(calDateRaw, ["DD/MM/YYYY", "D/M/YYYY", "YYYY-MM-DD"], true);
-      } else {
-        baseDate = dayjs.invalid();
       }
 
       if (!baseDate.isValid()) return;
 
       const nextCal = baseDate.add(interval, "month");
       total++;
-      if (nextCal.isBefore(today)) {
-        overdue++;
-      }
+      if (nextCal.isBefore(today)) overdue++;
     });
 
     res.status(200).send({ total, overdue });
@@ -113,6 +113,9 @@ machinesRouter.get("/summary", async (req, res) => {
   }
 });
 
+//
+// ✏️ עדכון מכונה לפי ID
+//
 machinesRouter.put("/:id", async (req, res) => {
   const { id } = req.params;
   const body = req.body;
@@ -126,13 +129,10 @@ machinesRouter.put("/:id", async (req, res) => {
     }
 
     const docData = existing.data();
-    const newDate = body["Calibration Date"] || body.calibrationDate;
-    const newInterval =
-      body["Calibration interval"] || body.calibrationInterval || docData["Calibration interval"];
-    const newNextCalibration = body["Next Calibration"] || body.nextCalibration;
-
     const updatedData = {};
 
+    // 🗓️ תאריך כיול
+    const newDate = body["Calibration Date"] || body.calibrationDate;
     if (newDate) {
       const parsed = dayjs(newDate, ["YYYY-MM-DD", "DD/MM/YYYY", "D/M/YYYY"], true);
       if (parsed.isValid()) {
@@ -142,10 +142,15 @@ machinesRouter.put("/:id", async (req, res) => {
       }
     }
 
+    // 🔁 אינטרוול
+    const newInterval =
+      body["Calibration interval"] || body.calibrationInterval || docData["Calibration interval"];
     if (newInterval) {
       updatedData["Calibration interval"] = String(newInterval);
     }
 
+    // 🗓️ תאריך הכיול הבא
+    const newNextCalibration = body["Next Calibration"] || body.nextCalibration;
     if (newNextCalibration) {
       const parsed = dayjs(newNextCalibration, ["YYYY-MM-DD", "DD/MM/YYYY", "D/M/YYYY"], true);
       if (parsed.isValid()) {
@@ -155,6 +160,7 @@ machinesRouter.put("/:id", async (req, res) => {
       }
     }
 
+    // 🧾 היסטוריה
     const CalibrationHistory = docData.CalibrationHistory || [];
     CalibrationHistory.push({
       date: admin.firestore.Timestamp.now(),
@@ -176,6 +182,9 @@ machinesRouter.put("/:id", async (req, res) => {
   }
 });
 
+//
+// ➕ הוספת מכונה חדשה
+//
 machinesRouter.post("/", async (req, res) => {
   try {
     const machine = req.body;
@@ -185,6 +194,7 @@ machinesRouter.post("/", async (req, res) => {
       return res.status(400).send({ error: "Missing required fields" });
     }
 
+    // 🗓️ תאריך כיול
     let calibrationDate = machine["Calibration Date"];
     if (typeof calibrationDate === "string") {
       const parsed = dayjs(calibrationDate, ["YYYY-MM-DD", "DD/MM/YYYY", "D/M/YYYY"], true);
@@ -197,11 +207,12 @@ machinesRouter.post("/", async (req, res) => {
       typeof calibrationDate === "object" &&
       typeof calibrationDate.toDate === "function"
     ) {
-      // Valid timestamp
+      // כבר תקין
     } else {
       return res.status(400).send({ error: "Calibration Date is missing or invalid" });
     }
 
+    // 🗓️ חישוב תאריך הכיול הבא
     let nextCalibration = null;
     if (calibrationDate && machine["Calibration interval"]) {
       const months = parseInt(
@@ -211,6 +222,7 @@ machinesRouter.post("/", async (req, res) => {
       nextCalibration = admin.firestore.Timestamp.fromDate(next.toDate());
     }
 
+    // ✨ יצירת המסמך
     const newMachine = {
       ...machine,
       "Calibration Date": calibrationDate,
@@ -241,4 +253,7 @@ machinesRouter.post("/", async (req, res) => {
   }
 });
 
+//
+// 📦 ייצוא ה־Router
+//
 module.exports = machinesRouter;

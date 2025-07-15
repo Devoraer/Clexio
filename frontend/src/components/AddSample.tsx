@@ -10,7 +10,9 @@ import {
   Button,
   Stack,
   MenuItem,
+  Autocomplete,
 } from "@mui/material";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import axios from "axios";
 import dayjs from "dayjs";
 
@@ -28,7 +30,7 @@ const AddSample = ({ open, onClose, onSuccess }: Props) => {
     sampleName: "",
     containers: 1,
     testsRequired: false,
-    machineMade: "",
+    MachineMade: "",
     projectName: "",
     receivedFrom: "",
     storage: "",
@@ -43,39 +45,62 @@ const AddSample = ({ open, onClose, onSuccess }: Props) => {
   useEffect(() => {
     if (!open) return;
 
+    setFormData({
+      id: "",
+      dateOfReceipt: dayjs().format("YYYY-MM-DD"),
+      clexioNumber: "",
+      sampleName: "",
+      containers: 1,
+      testsRequired: false,
+      MachineMade: "",
+      projectName: "",
+      receivedFrom: "",
+      storage: "",
+      receivedBy: "",
+      comment: "",
+    });
+
     const isString = (val: any): val is string =>
       typeof val === "string" && val.trim() !== "";
 
+    const generateClexioNumber = (): string => {
+      const random = Math.floor(100 + Math.random() * 900);
+      return `25-${random}`;
+    };
+
     const fetchData = async () => {
       try {
-        const idRes = await axios.get("http://localhost:3000/api/Samples/next-id");
-        const machinesRes = await axios.get("http://localhost:3000/api/machines/all");
-        const samplesRes = await axios.get("http://localhost:3000/api/Samples/all");
-        const usersRes = await axios.get("http://localhost:3000/api/users");
+        const [idRes, machinesRes, samplesRes] = await Promise.all([
+          axios.get("http://localhost:3000/api/Samples/preview-id"),
+          axios.get("http://localhost:3000/api/machines/all"),
+          axios.get("http://localhost:3000/api/Samples/all"),
+        ]);
 
-        setFormData((prev) => ({ ...prev, id: idRes.data }));
+        const id = parseInt(idRes.data);
 
-        const machines: string[] = machinesRes.data
-          .map((m: any) => m["Instrument ID"])
-          .filter(isString);
-
-        const storage: string[] = Array.from(
+        const machines: string[] = Array.from(
           new Set(
-            samplesRes.data
-              .map((s: any) => s.storage)
-              .filter(isString)
+            machinesRes.data
+              .map((m: any) => m["Instrument ID"])
+              .filter((val): val is string => typeof val === "string" && val.trim() !== "")
           )
         );
 
-        const users: string[] = usersRes.data
-          .map((u: any) => u.Username)
-          .filter(isString);
+        const storage: string[] = Array.from(
+          new Set(samplesRes.data.map((s: any) => s.storage).filter(isString))
+        );
+
+        setFormData((prev) => ({
+          ...prev,
+          id: id.toString(),
+          clexioNumber: generateClexioNumber(),
+        }));
 
         setMachineOptions(machines);
         setStorageOptions(storage);
-        setReceivedByOptions(users);
+        setReceivedByOptions([]); // לשדרוג עתידי
       } catch (error) {
-        console.error("Error loading data", error);
+        console.error("❌ Error loading data", error);
       }
     };
 
@@ -94,24 +119,40 @@ const AddSample = ({ open, onClose, onSuccess }: Props) => {
 
   const handleSave = async () => {
     const payload = {
-      ID: formData.id,
-      "Date Of Receipt": formData.dateOfReceipt,
-      "clexio Number": formData.clexioNumber,
-      "Sample Name": formData.sampleName,
-      Containers: formData.containers,
-      "Tests Required": formData.testsRequired,
-      "Machine Made": formData.machineMade,
-      "Project Name": formData.projectName,
-      "Received From": formData.receivedFrom,
-      Storage: formData.storage,
-      "Received By": formData.receivedBy,
-      Comment: formData.comment,
+      clexioNumber: formData.clexioNumber,
+      comment: formData.comment,
+      completedBy: "",
+      completionDate: "",
+      containers: formData.containers,
+      dateOfReceipt: formData.dateOfReceipt,
+      projectName: formData.projectName,
+      receivedBy: formData.receivedBy,
+      receivedFrom: formData.receivedFrom,
+      sampleName: formData.sampleName,
+      storage: formData.storage,
+      testsRequired: formData.testsRequired,
+      MachineMade: formData.MachineMade,
     };
 
     try {
       await axios.post("http://localhost:3000/api/Samples", payload);
       onSuccess();
       onClose();
+
+      setFormData({
+        id: "",
+        dateOfReceipt: dayjs().format("YYYY-MM-DD"),
+        clexioNumber: "",
+        sampleName: "",
+        containers: 1,
+        testsRequired: false,
+        MachineMade: "",
+        projectName: "",
+        receivedFrom: "",
+        storage: "",
+        receivedBy: "",
+        comment: "",
+      });
     } catch (err) {
       console.error("❌ Failed to save sample:", err);
       alert("⚠️ Failed to add sample");
@@ -129,24 +170,27 @@ const AddSample = ({ open, onClose, onSuccess }: Props) => {
             label="Date Of Receipt"
             type="date"
             value={formData.dateOfReceipt}
-            onChange={(e) => setFormData({ ...formData, dateOfReceipt: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, dateOfReceipt: e.target.value })
+            }
             fullWidth
           />
 
-          <TextField 
-            label="Clexio Number" 
-            name="clexioNumber" 
-            value={formData.clexioNumber} 
-            onChange={handleChange} 
-            fullWidth 
+          <TextField
+            label="Clexio Number"
+            name="clexioNumber"
+            value={formData.clexioNumber}
+            onChange={handleChange}
+            fullWidth
+            disabled
           />
 
-          <TextField 
-            label="Sample Name" 
-            name="sampleName" 
-            value={formData.sampleName} 
-            onChange={handleChange} 
-            fullWidth 
+          <TextField
+            label="Sample Name"
+            name="sampleName"
+            value={formData.sampleName}
+            onChange={handleChange}
+            fullWidth
           />
 
           <TextField
@@ -170,21 +214,45 @@ const AddSample = ({ open, onClose, onSuccess }: Props) => {
             <MenuItem value="No">No</MenuItem>
           </TextField>
 
-          <TextField
-            label="Machine Made"
-            name="machineMade"
-            select
-            value={formData.machineMade}
-            onChange={handleChange}
-            fullWidth
-          >
-            <MenuItem value="">
-              <em>Select a machine</em>
-            </MenuItem>
-            {machineOptions.map((id) => (
-              <MenuItem key={id} value={id}>{id}</MenuItem>
-            ))}
-          </TextField>
+          {/* Machine Made */}
+          <Autocomplete
+            freeSolo
+            disableClearable
+            popupIcon={<ArrowDropDownIcon />}
+            options={machineOptions}
+            value={formData.MachineMade}
+            getOptionLabel={(option) => option}
+            onChange={(_, newValue) =>
+              setFormData((prev) => ({ ...prev, MachineMade: newValue }))
+            }
+            onInputChange={(_, newInputValue) =>
+              setFormData((prev) => ({ ...prev, MachineMade: newInputValue }))
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Machine Made"
+                fullWidth
+                InputProps={{
+                  ...params.InputProps,
+                  endAdornment: (
+                    <>
+                      {params.InputProps.endAdornment}
+                      <ArrowDropDownIcon />
+                    </>
+                  ),
+                }}
+              />
+            )}
+            PopperProps={{
+              modifiers: [
+                { name: "preventOverflow", options: { boundary: "viewport" } },
+                { name: "flip", enabled: false },
+                { name: "offset", options: { offset: [0, 4] } },
+              ],
+              placement: "bottom-start",
+            }}
+          />
 
           <TextField
             label="Project Name"
@@ -194,45 +262,61 @@ const AddSample = ({ open, onClose, onSuccess }: Props) => {
             fullWidth
           />
 
-          <TextField 
-            label="Received From" 
-            name="receivedFrom" 
-            value={formData.receivedFrom} 
-            onChange={handleChange} 
-            fullWidth 
-          />
-
           <TextField
-            label="Storage"
-            name="storage"
-            select
-            value={formData.storage}
+            label="Received From"
+            name="receivedFrom"
+            value={formData.receivedFrom}
             onChange={handleChange}
             fullWidth
-          >
-            <MenuItem value="">
-              <em>Select storage location</em>
-            </MenuItem>
-            {storageOptions.map((val) => (
-              <MenuItem key={val} value={val}>{val}</MenuItem>
-            ))}
-          </TextField>
+          />
+
+          {/* Storage */}
+          <Autocomplete
+            freeSolo
+            disableClearable
+            popupIcon={<ArrowDropDownIcon />}
+            options={storageOptions}
+            value={formData.storage}
+            getOptionLabel={(option) => option}
+            onChange={(_, newValue) =>
+              setFormData((prev) => ({ ...prev, storage: newValue }))
+            }
+            onInputChange={(_, newInputValue) =>
+              setFormData((prev) => ({ ...prev, storage: newInputValue }))
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Storage"
+                fullWidth
+                InputProps={{
+                  ...params.InputProps,
+                  endAdornment: (
+                    <>
+                      {params.InputProps.endAdornment}
+                      <ArrowDropDownIcon />
+                    </>
+                  ),
+                }}
+              />
+            )}
+            PopperProps={{
+              modifiers: [
+                { name: "preventOverflow", options: { boundary: "viewport" } },
+                { name: "flip", enabled: false },
+                { name: "offset", options: { offset: [0, 4] } },
+              ],
+              placement: "bottom-start",
+            }}
+          />
 
           <TextField
             label="Received By"
             name="receivedBy"
-            select
             value={formData.receivedBy}
             onChange={handleChange}
             fullWidth
-          >
-            <MenuItem value="">
-              <em>Select a user</em>
-            </MenuItem>
-            {receivedByOptions.map((user) => (
-              <MenuItem key={user} value={user}>{user}</MenuItem>
-            ))}
-          </TextField>
+          />
 
           <TextField
             label="Comment"
@@ -245,9 +329,14 @@ const AddSample = ({ open, onClose, onSuccess }: Props) => {
           />
         </Stack>
       </DialogContent>
+
       <DialogActions>
-        <Button onClick={onClose} color="secondary">Cancel</Button>
-        <Button onClick={handleSave} variant="contained" color="primary">Add</Button>
+        <Button onClick={onClose} color="secondary">
+          Cancel
+        </Button>
+        <Button onClick={handleSave} variant="contained" color="primary">
+          Add
+        </Button>
       </DialogActions>
     </Dialog>
   );

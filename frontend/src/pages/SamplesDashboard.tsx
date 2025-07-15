@@ -1,3 +1,5 @@
+// 📁 frontend/src/components/SamplesDashboard.tsx
+
 import React, { useEffect, useState } from "react";
 import {
   Box, Card, CardContent, Typography, Chip, TextField, Button,
@@ -12,9 +14,15 @@ import AssignmentIcon from "@mui/icons-material/Assignment";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import AddSample from "../components/AddSample";
+import dayjs from "dayjs";
+import NoteAltIcon from "@mui/icons-material/NoteAlt";
+import IconButton from "@mui/material/IconButton";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
 
-
-type Sample = {
+interface Sample {
   ID: number;
   dateOfReceipt: string;
   clexioNumber: string;
@@ -26,10 +34,15 @@ type Sample = {
   storage: string;
   receivedBy: string;
   MachineMade: string;
-  comment: string;
+  comment: string | Array<{ text: string; date: string }>;
   completionDate: string;
   completedBy: string;
-};
+  comments?: Array<{
+    addedBy?: string;
+    text: string;
+    timestamp: string;
+  }>;
+}
 
 const SamplesDashboard = () => {
   const navigate = useNavigate();
@@ -42,7 +55,9 @@ const SamplesDashboard = () => {
   const [updateFields, setUpdateFields] = useState<{ [id: number]: { completionDate: string; completedBy: string } }>({});
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [openAddSampleDialog, setOpenAddSampleDialog] = useState(false);
-
+  const [openCommentDialog, setOpenCommentDialog] = useState(false);
+  const [selectedSampleId, setSelectedSampleId] = useState<number | null>(null);
+  const [newComment, setNewComment] = useState("");
 
   const toggleExpand = (id: number) => {
     setExpandedIds((prev) =>
@@ -56,7 +71,7 @@ const SamplesDashboard = () => {
 
   const fetchSamples = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/api/samples");
+      const response = await axios.get("http://localhost:3000/api/samples/all");
       setSamples(response.data as Sample[]);
     } catch (error) {
       console.error("Error fetching samples:", error);
@@ -123,6 +138,26 @@ const SamplesDashboard = () => {
     }
   };
 
+  const handleSaveComment = async () => {
+  if (!selectedSampleId || !newComment.trim()) return;
+
+  const comment = {
+    text: newComment.trim(),
+    timestamp: dayjs().toISOString(),
+  };
+
+  try {
+    await axios.post(`http://localhost:3000/api/samples/${selectedSampleId}/add-comment`, comment);
+    setNewComment("");
+    setOpenCommentDialog(false);
+    setSelectedSampleId(null);
+    fetchSamples(); // ריענון
+  } catch (error) {
+    console.error("Failed to save comment:", error);
+  }
+};
+
+
   const filteredSamples = samples
     .filter((s) => {
       const status = getStatus(s).status;
@@ -138,8 +173,20 @@ const SamplesDashboard = () => {
   const renderSampleCard = (sample: Sample) => {
     const status = getStatus(sample);
     return (
-      <Card key={sample.ID} sx={{ borderRadius: 4, boxShadow: 3 }}>
-        <CardContent>
+      <Card key={sample.ID} sx={{ borderRadius: 4, boxShadow: 3, width: "100%", minWidth: 320 }}>
+        <Box display="flex" justifyContent="flex-end">
+          <IconButton
+            size="small"
+            onClick={() => {
+              setSelectedSampleId(sample.ID);
+              setOpenCommentDialog(true);
+            }}
+          >
+            <NoteAltIcon />
+          </IconButton>
+        </Box>
+
+        <CardContent sx={{ textAlign: "left" }}>
           <Chip label={status.status} color={status.color as any} sx={{ mb: 1 }} />
           <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>{sample.sampleName}</Typography>
           <Typography variant="body2">ID: {sample.ID}</Typography>
@@ -161,8 +208,8 @@ const SamplesDashboard = () => {
                     ...prev,
                     [sample.ID]: {
                       ...prev[sample.ID],
-                      completionDate: e.target.value,
-                    },
+                      completionDate: e.target.value
+                    }
                   }))
                 }
               />
@@ -176,16 +223,27 @@ const SamplesDashboard = () => {
                     ...prev,
                     [sample.ID]: {
                       ...prev[sample.ID],
-                      completedBy: e.target.value,
-                    },
+                      completedBy: e.target.value
+                    }
                   }))
                 }
               />
-              <Button size="small" variant="outlined" onClick={() => handleUpdate(sample.ID)}>Update</Button>
+              <Box textAlign="left">
+                <Button size="small" variant="outlined" onClick={() => handleUpdate(sample.ID)}>Update</Button>
+              </Box>
             </Stack>
           )}
 
-          <Button size="small" endIcon={isExpanded(sample.ID) ? <ExpandLessIcon /> : <ExpandMoreIcon />} sx={{ mt: 2 }} onClick={() => toggleExpand(sample.ID)}>Expand</Button>
+          <Box textAlign="left">
+            <Button
+              size="small"
+              endIcon={isExpanded(sample.ID) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              sx={{ mt: 2 }}
+              onClick={() => toggleExpand(sample.ID)}
+            >
+              Expand
+            </Button>
+          </Box>
 
           <Collapse in={isExpanded(sample.ID)} timeout="auto" unmountOnExit>
             <Box mt={2}>
@@ -195,7 +253,40 @@ const SamplesDashboard = () => {
               <Typography variant="body2">Received From: {sample.receivedFrom}</Typography>
               <Typography variant="body2">Received By: {sample.receivedBy}</Typography>
               <Typography variant="body2">Machine Made: {sample.MachineMade}</Typography>
-              <Typography variant="body2">Comment: {sample.comment}</Typography>
+
+              {typeof sample.comment === "string" ? (
+                <Typography variant="body2">Comment: {sample.comment}</Typography>
+              ) : Array.isArray(sample.comment) ? (
+                <Box mt={1}>
+                  <Typography variant="body2" fontWeight="bold">Comments:</Typography>
+                  <ul style={{ paddingLeft: 16 }}>
+                {sample.comment.map((c, i) => (
+                  <li key={i}>
+                    <Typography variant="body2">
+                      {c.text} <br /> {dayjs(c.date).format("YYYY-MM-DD")}
+                    </Typography>
+                  </li>
+                ))}
+
+                  </ul>
+                </Box>
+              ) : null}
+
+              {Array.isArray(sample.comments) && sample.comments.length > 0 && (
+                <Box mt={1}>
+                  <Typography variant="body2" fontWeight="bold">Additional Comments:</Typography>
+                  <ul style={{ paddingLeft: 16 }}>
+                    {sample.comments.map((c, i) => (
+                      <li key={i}>
+                        <Typography variant="body2">
+                          {c.text}<br />👤 {c.addedBy || "Unknown"}  {dayjs(c.timestamp).format("DD/MM/YYYY HH:mm")}
+                        </Typography>
+                      </li>
+                    ))}
+                  </ul>
+                </Box>
+              )}
+
               <Typography variant="body2">Completed By: {sample.completedBy}</Typography>
               <Typography variant="body2">Completion Date: {sample.completionDate}</Typography>
             </Box>
@@ -205,50 +296,28 @@ const SamplesDashboard = () => {
     );
   };
 
-const renderStabilityCard = (item: any) => {
-  const status = getStabilityStatus(item);
+  const renderStabilityCard = (item: any) => {
+    const status = getStabilityStatus(item);
+    return (
+      <Card key={item.ID} sx={{ borderRadius: 4, boxShadow: 3, minWidth: 320 }}>
+        <CardContent>
+          <Chip label={status.status} color={status.color as any} sx={{ mb: 1 }} />
+          <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>
+            {item.stabilityName || item["Stability Name"] || "Unnamed"}
+          </Typography>
+          <Typography variant="body2">ID: {typeof item.ID === "object" ? JSON.stringify(item.ID) : item.ID}</Typography>
+          <Typography variant="body2">Opened Date: {item.openedDate || item["Opened date"] || "-"}</Typography>
+          <Typography variant="body2">Project Name: {item.projectName || item["Project name"] || "-"}</Typography>
+          <Typography variant="body2">Dosage Form: {item.dosageForm || item["Dosage Form"] || "-"}</Typography>
+          <Button size="small" sx={{ mt: 2 }} endIcon={<ExpandMoreIcon />} onClick={() => navigate(`/view-stability/${item.ID}`)}>View</Button>
+        </CardContent>
+      </Card>
+    );
+  };
+  
 
   return (
-    <Card key={item.ID} sx={{ borderRadius: 4, boxShadow: 3 }}>
-      <CardContent>
-        <Chip label={status.status} color={status.color as any} sx={{ mb: 1 }} />
-
-        <Typography variant="h6" sx={{ color: "#0288d1", fontWeight: "bold" }}>
-          {/* פתרון ל-Unnamed */}
-          {item.stabilityName || item["Stability Name"] || "Unnamed"}
-        </Typography>
-
-        {/* פתרון ל-ID לא תקני */}
-        <Typography variant="body2">
-          ID: {typeof item.ID === "object" ? JSON.stringify(item.ID) : item.ID}
-        </Typography>
-
-        <Typography variant="body2">
-          Opened Date: {item.openedDate || item["Opened date"] || "-"}
-        </Typography>
-
-        <Typography variant="body2">
-          Project Name: {item.projectName || item["Project name"] || "-"}
-        </Typography>
-
-        <Typography variant="body2">
-          Dosage Form: {item.dosageForm || item["Dosage Form"] || "-"}
-        </Typography>
-
-        <Button
-          size="small"
-          sx={{ mt: 2 }}
-          endIcon={<ExpandMoreIcon />}
-          onClick={() => navigate(`/view-stability/${item.ID}`)}
-        >
-          View
-        </Button>
-      </CardContent>
-    </Card>
-  );
-};
-
-  return (
+    
     <Box sx={{ padding: 4, backgroundColor: "#f5f7fb", width: "100%", boxSizing: "border-box" }}>
       <Typography variant="body1" sx={{ mb: 3 }}>
         Total samples loaded: {samples.length} | Stability checklist loaded: {stabilityItems.length}
@@ -269,7 +338,6 @@ const renderStabilityCard = (item: any) => {
         <TextField variant="outlined" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." sx={{ flexGrow: 1, minWidth: "220px" }} />
       </Stack>
 
-      {/* 🧪 Samples */}
       <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 3 }}>
         <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
           <ScienceIcon sx={{ mr: 1, color: "#0288d1", fontSize: 28 }} />
@@ -282,16 +350,12 @@ const renderStabilityCard = (item: any) => {
             No samples found matching your criteria
           </Typography>
         ) : (
-          <Box sx={{
-            display: "grid", gap: 3, width: "100%",
-            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)", lg: "repeat(4, 1fr)" }
-          }}>
+          <Box sx={{ display: "grid", gap: 3, width: "35%", gridTemplateColumns: "repeat(2, 1fr)" }}>
             {filteredSamples.map(renderSampleCard)}
           </Box>
         )}
       </Paper>
 
-      {/* 📋 Stability */}
       <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 3 }}>
         <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
           <AssignmentIcon sx={{ mr: 1, color: "#0288d1", fontSize: 28 }} />
@@ -304,21 +368,34 @@ const renderStabilityCard = (item: any) => {
             No stability checks found matching your criteria
           </Typography>
         ) : (
-          <Box sx={{
-            display: "grid", gap: 3, width: "100%",
-            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)", lg: "repeat(4, 1fr)" }
-          }}>
+          <Box sx={{ display: "grid", gap: 3, width: "35%", gridTemplateColumns: "repeat(2, 1fr)" }}>
             {filteredStabilityItems.map(renderStabilityCard)}
           </Box>
         )}
       </Paper>
-
+      <Dialog open={openCommentDialog} onClose={() => setOpenCommentDialog(false)}>
+        <DialogTitle>Add Comment</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            multiline
+            minRows={3}
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Write your comment here..."
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCommentDialog(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleSaveComment}>Save</Button>
+        </DialogActions>
+      </Dialog>
       <AddSample
         open={openAddSampleDialog}
         onClose={() => setOpenAddSampleDialog(false)}
         onSuccess={() => {
           setOpenAddSampleDialog(false);
-          fetchSamples(); 
+          fetchSamples();
         }}
       />
     </Box>

@@ -1,3 +1,5 @@
+// 📁 HomePage.tsx
+
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -11,13 +13,11 @@ import {
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 
-// 🧠 Icons
 import MedicationLiquidIcon from "@mui/icons-material/Science";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HomeIcon from "@mui/icons-material/Home";
 import MedicationIcon from "@mui/icons-material/Medication";
 
-// 🖼 אייקון ציוד מתמונה
 import MachineIcon from "../icones/machine.png";
 import UpcomingRemindersTable from "../components/UpcomingRemindersTable";
 
@@ -31,6 +31,8 @@ export default function HomePage() {
 
   const [sampleStats, setSampleStats] = useState({
     total: 0,
+    inProgress: 0,
+    stabilityInProgress: 0,
   });
 
   const [equipmentStats, setEquipmentStats] = useState({
@@ -38,7 +40,6 @@ export default function HomePage() {
     overdue: 0,
   });
 
-  // ✅ חישוב Expiring Soon לפי תאריך – בלי status
   useEffect(() => {
     fetch("http://localhost:3000/api/materials")
       .then((res) => res.json())
@@ -103,15 +104,16 @@ export default function HomePage() {
       ),
       route: "/machines",
       stats: (
-        <Stack direction="row" spacing={1} justifyContent="center" mt={2}>
+        <Stack direction="column" spacing={1} alignItems="center" mt={2}>
           <Chip
             label={`Total: ${equipmentStats.total}`}
             sx={{
               bgcolor: "#f0f0f0",
               color: "#333",
               fontWeight: "bold",
-              transition: "0.3s",
-              ":hover": { boxShadow: 2 },
+              fontSize: "0.85rem",
+              px: 2.5,
+              borderRadius: "8px",
             }}
           />
           <Chip
@@ -120,8 +122,9 @@ export default function HomePage() {
               bgcolor: "#fdecea",
               color: "#d32f2f",
               fontWeight: "bold",
-              transition: "0.3s",
-              ":hover": { boxShadow: 2 },
+              fontSize: "0.85rem",
+              px: 2,
+              borderRadius: "8px",
             }}
           />
         </Stack>
@@ -147,19 +150,27 @@ export default function HomePage() {
       ),
       route: "/samples",
       stats: (
-        <Stack direction="row" justifyContent="center" mt={2}>
+        <Stack direction="column" spacing={1} alignItems="center" mt={2}>
           <Chip
-            label={
-              sampleStats.total !== undefined
-                ? `Total: ${sampleStats.total}`
-                : "Loading..."
-            }
+            label={`${sampleStats.inProgress} Samples in process`}
             sx={{
-              bgcolor: "#f0f0f0",
-              color: "#333",
+              bgcolor: "#ffe0b2",
+              color: "#e65100",
               fontWeight: "bold",
-              transition: "0.3s",
-              ":hover": { boxShadow: 2 },
+              fontSize: "0.85rem",
+              px: 2,
+              borderRadius: "8px",
+            }}
+          />
+          <Chip
+            label={`${sampleStats.stabilityInProgress} Stability in process`}
+            sx={{
+              bgcolor: "#d1c4e9",
+              color: "#4a148c",
+              fontWeight: "bold",
+              fontSize: "0.85rem",
+              px: 2,
+              borderRadius: "8px",
             }}
           />
         </Stack>
@@ -185,25 +196,27 @@ export default function HomePage() {
       ),
       route: "/materials",
       stats: (
-        <Stack direction="row" spacing={1} justifyContent="center" mt={2}>
+        <Stack direction="column" spacing={1} alignItems="center" mt={2}>
           <Chip
             label={`Total: ${materialStats.total}`}
-            sx={{
+             sx={{
               bgcolor: "#f0f0f0",
               color: "#333",
               fontWeight: "bold",
-              transition: "0.3s",
-              ":hover": { boxShadow: 2 },
+              fontSize: "0.85rem",
+              px: 5,
+              borderRadius: "8px",
             }}
           />
           <Chip
             label={`${materialStats.expiringSoon} expiring soon`}
             sx={{
-              bgcolor: "#fff3e0",
-              color: "#fb8c00",
+              bgcolor: "#ffe0b2",
+              color: "#e65100",
               fontWeight: "bold",
-              transition: "0.3s",
-              ":hover": { boxShadow: 2 },
+              fontSize: "0.85rem",
+              px: 2,
+              borderRadius: "8px",
             }}
           />
         </Stack>
@@ -211,11 +224,9 @@ export default function HomePage() {
     },
   ];
 
+
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
-    
-
-      {/* Main Content */}
       <Box
         sx={{
           flexGrow: 1,
@@ -227,27 +238,24 @@ export default function HomePage() {
           p: 4,
         }}
       >
-        {/* טבלה עם גובה קבוע וגלילה פנימית */}
         <Box
           mt={2}
           width="100%"
           maxWidth="900px"
           sx={{
-            maxHeight: 360,
-            overflowY: "auto",
             backgroundColor: "white",
             borderRadius: 2,
             boxShadow: 3,
             p: 2,
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <Typography variant="h5" mb={2} textAlign="center" sx={{ color: "#1976d2" }} >
-            🔔 Urgent Alerts
-          </Typography>
-          <UpcomingRemindersTable />
+          <Box sx={{ maxHeight: 250, overflowY: "auto" }}>
+            <UpcomingRemindersTable />
+          </Box>
         </Box>
 
-        {/* כרטיסים למטה */}
         <Box
           sx={{
             display: "flex",

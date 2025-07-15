@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from "react";
 import {
-  Table, TableHead, TableRow, TableCell, TableBody,
-  Paper, TableContainer, Typography
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Paper,
+  TableContainer,
+  Typography,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -80,8 +86,11 @@ const UpcomingRemindersTable = () => {
   if (loading) return <p>⏳ Loading alerts...</p>;
 
   return (
-    <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
-      <Table>
+    <TableContainer
+      component={Paper}
+      sx={{ borderRadius: 2, boxShadow: 3, maxHeight: 250, overflowY: "auto" }}
+    >
+      <Table stickyHeader>
         <TableHead>
           <TableRow>
             {["Type", "Name", "Date", "Status"].map((header, index) => (
@@ -93,6 +102,9 @@ const UpcomingRemindersTable = () => {
                   color: "#1976d2",
                   fontSize: "1rem",
                   backgroundColor: "#e3f2fd",
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 1,
                   textAlign: "left",
                 }}
               >
@@ -116,7 +128,14 @@ const UpcomingRemindersTable = () => {
               <TableCell align="left">{item.type}</TableCell>
               <TableCell align="left">{item.name}</TableCell>
               <TableCell align="left">
-                <Typography sx={{ color: formatDueDate(item.dueDate) === "תאריך לא ידוע" ? "gray" : "inherit" }}>
+                <Typography
+                  sx={{
+                    color:
+                      formatDueDate(item.dueDate) === "תאריך לא ידוע"
+                        ? "gray"
+                        : "inherit",
+                  }}
+                >
                   {formatDueDate(item.dueDate)}
                 </Typography>
               </TableCell>

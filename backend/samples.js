@@ -1,34 +1,76 @@
-// 📁 backend/samples.js
 const express = require("express");
 const router = express.Router();
 const { db } = require("./firebase");
 
-// 🧮 פונקציה שמביאה את הערך הנוכחי ומגדילה אותו
 const getNextId = async () => {
-  const counterRef = db.collection("Meta").doc("sampleIdCounter");
+  const counterRef = db.collection("IdCounters").doc("SamplesId");
   const result = await db.runTransaction(async (t) => {
     const doc = await t.get(counterRef);
-    const current = doc.exists ? doc.data().value : 1;
+    const current = doc.exists ? parseInt(doc.data().nextId) : 1;
     const next = current + 1;
-    t.set(counterRef, { value: next });
+    t.set(counterRef, { nextId: next.toString() });
     return next;
   });
   return result;
 };
 
-// 🔍 שליפת כל הדגימות
-router.get("/", async (req, res) => {
+router.get("/preview-id", async (req, res) => {
+  try {
+    const doc = await db.collection("IdCounters").doc("SamplesId").get();
+    const current = doc.exists ? parseInt(doc.data().nextId) : 1;
+    res.status(200).send(current.toString());
+  } catch (error) {
+    console.error("❌ שגיאה בשליפת preview id:", error);
+    res.status(500).send({ error: "שגיאה בשליפת preview id" });
+  }
+});
+
+router.get("/all", async (req, res) => {
   try {
     const snapshot = await db.collection("Samples").get();
-    const samples = snapshot.docs.map(doc => ({ ID: doc.id, ...doc.data() }));
+    const samples = snapshot.docs.map(doc => doc.data());
     res.status(200).send(samples);
   } catch (error) {
-    console.error("❌ שגיאה בשליפת דגימות:", error);
+    console.error("❌ שגיאה בשליפת כל הדגימות:", error);
     res.status(500).send({ error: "שגיאה בשליפת הדגימות" });
   }
 });
 
-// 🔍 שליפת דגימה לפי ID
+router.get("/summary", async (req, res) => {
+  try {
+    const snapshot = await db.collection("Samples").get();
+
+    let inProgress = 0;
+    let stabilityInProgress = 0;
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+
+      if (
+        !data.completionDate ||
+        data.status === "in process" ||
+        data.status === "In Progress"
+      ) {
+        inProgress++;
+      }
+
+      if (data.testsRequired === true) {
+        stabilityInProgress++;
+      }
+    });
+
+    res.status(200).json({
+      inProgress,
+      stabilityInProgress,
+    });
+  } catch (error) {
+    console.error("❌ שגיאה בשליפת summary של דגימות:", error);
+    res.status(500).send({ error: "שגיאה בשליפת summary" });
+  }
+});
+
+
+
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -44,7 +86,6 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// ➕ הוספת דגימה חדשה עם ID שנוצר מהשרת בלבד
 router.post("/", async (req, res) => {
   try {
     const {
@@ -59,21 +100,22 @@ router.post("/", async (req, res) => {
       receivedFrom,
       sampleName,
       storage,
-      testsRequired
+      testsRequired,
+      MachineMade
     } = req.body;
 
-    // אימות שדות חובה
     if (!clexioNumber || !dateOfReceipt || !sampleName) {
-      return res.status(400).send({ error: "חסרים שדות חובה: clexioNumber, dateOfReceipt, sampleName" });
+      return res.status(400).send({
+        error: "חסרים שדות חובה: clexioNumber, dateOfReceipt, sampleName",
+      });
     }
 
-    // קבלת ID חדש אוטומטי
     const newId = (await getNextId()).toString();
 
     const newSample = {
       ID: newId,
       clexioNumber,
-      comment: comment || "",
+      comment: comment ? [{ text: comment, date: new Date().toISOString() }] : [],
       completedBy: completedBy || "",
       completionDate: completionDate || "",
       containers: containers || 0,
@@ -83,18 +125,19 @@ router.post("/", async (req, res) => {
       receivedFrom: receivedFrom || "",
       sampleName,
       storage: storage || "",
-      testsRequired: testsRequired || ""
+      testsRequired: typeof testsRequired === "boolean" ? testsRequired : false,
+      MachineMade: MachineMade || ""
     };
 
     await db.collection("Samples").doc(newId).set(newSample);
     res.status(201).send({ message: "Sample added successfully", id: newId });
+
   } catch (error) {
     console.error("❌ שגיאה בהוספת דגימה:", error);
     res.status(500).send({ error: "שגיאה בהוספת דגימה" });
   }
 });
 
-// ✏️ עדכון הערה לפי ID
 router.put("/:id/comment", async (req, res) => {
   const { id } = req.params;
   const { comment } = req.body;
@@ -108,20 +151,20 @@ router.put("/:id/comment", async (req, res) => {
   }
 });
 
-// ✅ עדכון completionDate ו-completedBy לפי ID
 router.put("/:id/completion", async (req, res) => {
   const { id } = req.params;
   const { completionDate, completedBy } = req.body;
 
   if (!completionDate && !completedBy) {
-    return res.status(400).send({ error: "חובה לציין לפחות completionDate או completedBy" });
+    return res.status(400).send({
+      error: "חובה לציין לפחות completionDate או completedBy",
+    });
   }
 
   try {
     const updateData = {};
 
     if (completionDate) {
-      // המרת תאריך מ־yyyy-mm-dd ל־dd/mm/yyyy
       if (/^\d{4}-\d{2}-\d{2}$/.test(completionDate)) {
         const [year, month, day] = completionDate.split("-");
         updateData.completionDate = `${day}/${month}/${year}`;
@@ -136,10 +179,47 @@ router.put("/:id/completion", async (req, res) => {
 
     await db.collection("Samples").doc(id).update(updateData);
     res.status(200).send({ message: "Sample completion info updated successfully" });
+
   } catch (error) {
     console.error("❌ שגיאה בעדכון completion:", error);
     res.status(500).send({ error: "שגיאה בעדכון שדות השלמה" });
   }
 });
+
+//
+// ✅ הוספת הערה לדגימה, כולל שם מכונה מתוך sample
+//
+router.post("/:id/add-comment", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { text } = req.body;
+
+    const querySnapshot = await db.collection("Samples").where("ID", "==", id).get();
+    if (querySnapshot.empty) {
+      return res.status(404).send("Sample not found");
+    }
+
+    const doc = querySnapshot.docs[0];
+    const data = doc.data();
+    const existing = Array.isArray(data.comment) ? data.comment : [];
+
+    const newComment = {
+      text,
+      date: new Date().toISOString(),
+      machineUsed: data.MachineMade || "—"
+    };
+
+    await doc.ref.update({
+      comment: [...existing, newComment]
+    });
+
+    res.status(200).send("Comment with machine added ✅");
+  } catch (err) {
+    console.error("❌ Error adding comment:", err);
+    res.status(500).send("Error adding comment");
+  }
+});
+
+
 
 module.exports = router;
