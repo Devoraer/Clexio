@@ -16,15 +16,16 @@ const AddStabilityForm = () => {
     approvedByQA: { name: '', date: '' }
   });
 
-  useEffect(() => {
+useEffect(() => {
   const fetchNextId = async () => {
     try {
       const response = await fetch("http://localhost:3000/api/stability-checklist/next-id");
-      const nextId = await response.json();
+      const text = await response.text();
+      console.log("📥 ID from backend:", text);
 
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        ID: nextId.toString()  // נכניס את ה־ID גם ל־formData כדי שישמר ב־DB
+        ID: text,
       }));
     } catch (error) {
       console.error("❌ Failed to fetch ID:", error);
@@ -58,7 +59,7 @@ const AddStabilityForm = () => {
 
   const styles: { [key: string]: React.CSSProperties } = {
     container: {
-        width: '96.5vw',
+        width: '70vw',
         margin: 0,
         padding: '24px',
         backgroundColor: '#ffffff',
@@ -335,9 +336,41 @@ const addTest = () => {
 
 const handleSubmit = async () => {
   try {
+
+    const tests = formData.tests.slice(0, 15).map((t) => ({
+      testName: t.testName,
+      conditionsAndIntervals: t.conditionsAndIntervals,
+      amountSamplesTimePoints: t.amountSamplesTimePoints,
+    }));
+
+
     const filledFormData = {
-      ...formData,
-      openedDate: new Date().toISOString().split("T")[0], // 📅 תאריך פתיחה
+      ID: formData.ID,
+      "Stability Name": formData.stabilityName,
+      "Project name": formData.projectName,
+      "Dosage Form": formData.dosageForm,
+      "Batch Number": formData.batchNumber,
+      "Strength": formData.strength,
+      "Type of Container": formData.typeOfContainer,
+      "Type of Closure": formData.typeOfClosure,
+      "Type of Seal Condition": formData.typeOfSeal,
+      "Desiccant": formData.desiccant,
+      "Cotton or Similar Material": formData.cottonOrSimilarMaterial,
+      "Container Orientation": formData.containerOrientation,
+      "Stability Storage Conditions": formData.stabilityStorageConditions,
+      "Stability Specification Number, if applicable": formData.stabilitySpecificationNumber,
+      "Total amount of samples per study including spares": formData.totalAmountSamples,
+      "Name & Signature1": formData.completedBy.name,
+      "Date1": formData.completedBy.date,
+      "Name & Signature2": formData.approvedByAnalytical?.name || "",
+      "Date2": formData.approvedByAnalytical?.date || "",
+      "Name & Signature3": formData.approvedByQA?.name || "",
+      "Date3": formData.approvedByQA?.date || "",
+      "Opened date": new Date().toISOString().split("T")[0],
+      "Test Intervals Accelerated": formData.testIntervalsAccelerated.join(", "),
+      "Test Intervals Intermediate": formData.testIntervalsIntermediate.join(", "),
+      "Test Intervals Long Term": formData.testIntervalsLongTerm.join(", "),
+      tests: tests,
     };
 
     const response = await fetch("http://localhost:3000/api/stability-checklist/add", {
@@ -350,7 +383,7 @@ const handleSubmit = async () => {
 
     if (response.ok) {
       alert("✅ Checklist saved successfully!");
-      navigate("/samples"); // חזרה לעמוד הראשי
+      navigate("/samples");
     } else {
       const errorText = await response.text();
       alert("❌ Error: " + errorText);
@@ -639,8 +672,8 @@ const handleSubmit = async () => {
                   <label key={interval} style={styles.checkboxItem}>
                     <input
                       type="checkbox"
-                      checked={formData[`testIntervals${type}`].includes(interval)}
-                      onChange={() => handleTestIntervalChange(type, interval)}
+                        checked={formData[`testIntervals${type}`]?.includes(interval)}
+                        onChange={() => handleTestIntervalChange(type, interval)}
                     />
                     <span>{interval}</span>
                   </label>
@@ -688,7 +721,7 @@ const handleSubmit = async () => {
             />
           </div>
 
-          {/* Required Tests Section */}
+          {/* Tests Section */}
           <div style={styles.section}>
             <div style={styles.testHeader}>
               <h3 style={styles.sectionTitle}>Required Tests per interval & amount of samples</h3>

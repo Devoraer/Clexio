@@ -21,6 +21,7 @@ const machinesRouter = require("./machines");
 const stabilityChecklistRouter = require("./StabilityChecklistforsamples");
 const rawRouter = require("./raw");
 const alertsRouter = require("./alerts");
+const projectsRouter = require('./projects');
 
 // ✅ חיבור כל הראוטרים
 app.use("/api/materials", materialsRouter);
@@ -29,6 +30,8 @@ app.use("/api/machines", machinesRouter);
 app.use("/api/stability-checklist", stabilityChecklistRouter);
 app.use("/api/raw", rawRouter);
 app.use("/api/alerts", alertsRouter);
+app.use('/api/projects', projectsRouter);
+
 
 // ✅ חיבור ה־alertsRouter
 try {

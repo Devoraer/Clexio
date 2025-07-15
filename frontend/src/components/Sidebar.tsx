@@ -14,6 +14,8 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import ScienceIcon from "@mui/icons-material/Science";
 import PrecisionManufacturingIcon from "@mui/icons-material/PrecisionManufacturing";
 import { useNavigate, useLocation } from "react-router-dom";
+import BiotechIcon from '@mui/icons-material/Biotech';
+import FolderIcon from '@mui/icons-material/Folder';
 
 export default function Sidebar() {
   const navigate = useNavigate();
@@ -21,10 +23,12 @@ export default function Sidebar() {
 
   const navItems = [
     { label: "Home", icon: <HomeIcon />, path: "/" },
-    { label: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
     { label: "Materials", icon: <ScienceIcon />, path: "/materials" },
+    { label: "Samples", icon: <BiotechIcon />, path: "/samples" }, 
     { label: "Machines", icon: <PrecisionManufacturingIcon />, path: "/machines" },
+    { label: "Projects", icon: <FolderIcon />, path: "/projects" },
     { label: "Schedule", icon: <CalendarMonthIcon />, path: "/calendar" },
+    { label: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
   ];
 
   return (
