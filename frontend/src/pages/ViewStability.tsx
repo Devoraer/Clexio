@@ -586,22 +586,10 @@ const ViewStabilityForm = () => {
               <input
                 type="text"
                 value={formData.typeOfSeal}
-                readOnly={formData.typeOfSeal !== ''}
-                onChange={(e) => handleInputChange('typeOfSeal', e.target.value)}
-                style={formData.typeOfSeal === '' ? styles.inputEditable : styles.inputReadOnly}
+                readOnly
+                style={styles.inputReadOnly}
               />
             </div>
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.editableLabel}>Condition (Editable if empty)</label>
-            <input
-              type="text"
-              value={formData.condition}
-              readOnly={formData.condition !== ''}
-              onChange={(e) => handleInputChange('condition', e.target.value)}
-              style={formData.condition === '' ? styles.inputEditable : styles.inputReadOnly}
-            />
           </div>
 
           {/* Yes/No/NA Sections - READ ONLY */}

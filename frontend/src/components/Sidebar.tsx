@@ -28,7 +28,6 @@ export default function Sidebar() {
     { label: "Machines", icon: <PrecisionManufacturingIcon />, path: "/machines" },
     { label: "Projects", icon: <FolderIcon />, path: "/projects" },
     { label: "Schedule", icon: <CalendarMonthIcon />, path: "/calendar" },
-    { label: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
   ];
 
   return (

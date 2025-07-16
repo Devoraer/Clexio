@@ -1,3 +1,5 @@
+// 📁 frontend/src/components/ProjectsPage.tsx
+
 import React, { useState, useEffect } from 'react';
 import EditProjectDialog from "../components/EditProjectDialog";
 
@@ -7,8 +9,10 @@ import {
   IconButton
 } from '@mui/material';
 import {
-  Add, Edit, Delete, CalendarMonth, Person, Groups, Money, Info
+  Add, Edit, Delete, Groups
 } from '@mui/icons-material';
+
+import dayjs from "dayjs";
 
 interface Project {
   id: string;
@@ -20,7 +24,6 @@ interface Project {
   description: string;
   teamMembers: number;
   progress: number;
-  budget?: number;
   manager: string;
 }
 
@@ -44,11 +47,12 @@ const ProjectsPage: React.FC = () => {
     fetchProjects();
   }, []);
 
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-  const formatCurrency = (num?: number) =>
-    num ? `$${num.toLocaleString()}` : 'N/A';
+  const formatDate = (date: string) => {
+    const parsed = dayjs(date, ["DD/MM/YYYY", "YYYY-MM-DD", "MM/DD/YYYY"]);
+    return parsed.isValid()
+      ? parsed.format("MMM D, YYYY")
+      : "Invalid Date";
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -108,15 +112,14 @@ const ProjectsPage: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                <TableCell>Project Name</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Priority</TableCell>
-                <TableCell>Start</TableCell>
-                <TableCell>End</TableCell>
-                <TableCell>Progress</TableCell>
-                <TableCell>Manager</TableCell>
-                <TableCell>Budget</TableCell>
-                <TableCell>Actions</TableCell>
+              <TableCell>Project Name</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Priority</TableCell>
+              <TableCell>Start</TableCell>
+              <TableCell>End</TableCell>
+              <TableCell>Progress</TableCell>
+              <TableCell>Manager</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -149,7 +152,6 @@ const ProjectsPage: React.FC = () => {
                   </Box>
                 </TableCell>
                 <TableCell>{project.manager}</TableCell>
-                <TableCell>{formatCurrency(project.budget)}</TableCell>
                 <TableCell>
                   <Stack direction="row" spacing={1}>
                     <IconButton

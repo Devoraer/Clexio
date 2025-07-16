@@ -1,4 +1,3 @@
-// 📁 backend/projects.js
 const express = require('express');
 const router = express.Router();
 const { db } = require('./firebase');
@@ -12,7 +11,7 @@ router.get('/', async (req, res) => {
       return {
         id: doc.id,
         name: data["Project Name"] || '',
-        startDate: data["Start Date"] || '',
+        startDate: data["startDate"] || '',
         endDate: data["endDate"] || '',
         status: data["status"] || 'Active',
         priority: data["priority"] || 'Medium',
@@ -26,7 +25,7 @@ router.get('/', async (req, res) => {
 
     res.status(200).json(projects);
   } catch (error) {
-    console.error('❌ שגיאה בשליפת פרויקטים:', error);
+    console.error('Error with finding the project', error);
     res.status(500).json({ error: 'Failed to fetch projects' });
   }
 });
@@ -41,7 +40,7 @@ router.get('/:id', async (req, res) => {
     const project = {
       id: doc.id,
       name: data["Project Name"] || '',
-      startDate: data["Start Date"] || '',
+      startDate: data["startDate"] || '', 
       endDate: data["endDate"] || '',
       status: data["status"] || 'Active',
       priority: data["priority"] || 'Medium',
@@ -54,7 +53,7 @@ router.get('/:id', async (req, res) => {
 
     res.status(200).json(project);
   } catch (error) {
-    console.error('❌ שגיאה בשליפת פרויקט:', error);
+    console.error('Error with finding the project', error);
     res.status(500).json({ error: 'Failed to fetch project' });
   }
 });
@@ -67,7 +66,7 @@ router.put('/:id', async (req, res) => {
 
     await db.collection('Project').doc(id).update({
       "Project Name": data.name,
-      "Start Date": data.startDate,
+      "startDate": data.startDate, 
       endDate: data.endDate,
       status: data.status,
       priority: data.priority,
@@ -80,10 +79,9 @@ router.put('/:id', async (req, res) => {
 
     res.status(200).send("✅ Project updated successfully");
   } catch (error) {
-    console.error("❌ שגיאה בעדכון פרויקט:", error);
+    console.error("Error updating the project", error);
     res.status(500).send("Error updating project");
   }
 });
-
 
 module.exports = router;

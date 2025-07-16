@@ -20,6 +20,7 @@ import MedicationIcon from "@mui/icons-material/Medication";
 
 import MachineIcon from "../icones/machine.png";
 import UpcomingRemindersTable from "../components/UpcomingRemindersTable";
+import GarbageReminder from "../components/GarbageReminder";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -254,6 +255,8 @@ export default function HomePage() {
           <Box sx={{ maxHeight: 250, overflowY: "auto" }}>
             <UpcomingRemindersTable />
           </Box>
+          <GarbageReminder />
+
         </Box>
 
         <Box

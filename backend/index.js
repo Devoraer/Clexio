@@ -31,6 +31,7 @@ app.use("/api/stability-checklist", stabilityChecklistRouter);
 app.use("/api/raw", rawRouter);
 app.use("/api/alerts", alertsRouter);
 app.use('/api/projects', projectsRouter);
+app.use("/api/garbage", require("./garbage"));
 
 
 // ✅ חיבור ה־alertsRouter
