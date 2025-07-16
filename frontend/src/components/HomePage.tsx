@@ -112,7 +112,7 @@ export default function HomePage() {
               color: "#333",
               fontWeight: "bold",
               fontSize: "0.85rem",
-              px: 2.5,
+              px: 5.5,
               borderRadius: "8px",
             }}
           />
@@ -123,7 +123,7 @@ export default function HomePage() {
               color: "#d32f2f",
               fontWeight: "bold",
               fontSize: "0.85rem",
-              px: 2,
+              px: 5,
               borderRadius: "8px",
             }}
           />

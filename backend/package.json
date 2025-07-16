@@ -6,6 +6,7 @@
     "server": "nodemon index.js",
     "dev": "node index.js",
     "add_history": "node addCalibrationHistory.js"
+
   },
   "author": "",
   "license": "ISC",
@@ -13,7 +14,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
-    "@mui/icons-material": "^7.1.0",
+    "@mui/icons-material": "^7.2.0",
     "@mui/material": "^7.1.0",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
