@@ -213,7 +213,7 @@ const MachinesDashboard = () => {
           size="small"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ width: 400 }}
+          sx={{ width: 570 }}
         />
       </Stack>
 
@@ -342,9 +342,15 @@ const MachinesDashboard = () => {
                   <Typography variant="body2">
                     <strong>Sample:</strong> {sample.sampleName || "Unnamed"}
                   </Typography>
-                  <Typography variant="body2">
-                    <strong>Comment:</strong> {sample.comment || "—"}
-                  </Typography>
+                  {sample.comment ? (
+                    <>
+                      <Typography variant="body2"><strong>Comment:</strong> {sample.comment.text}</Typography>
+                      <Typography variant="body2"><strong>Comment Date:</strong> {sample.comment.date}</Typography>
+                    </>
+                  ) : (
+                    <Typography variant="body2"><strong>Comment:</strong> —</Typography>
+                  )}
+
                   <Typography variant="body2">
                     <strong>Received by:</strong> {sample.receivedBy || "—"}
                   </Typography>

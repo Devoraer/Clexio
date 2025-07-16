@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+// 📁 App.tsx
+import { HashRouter, Routes, Route } from "react-router-dom"; // 🟢 שימי לב להחלפה כאן!
 import './App.css';
 
 // ✅ עמודים
@@ -18,7 +19,7 @@ import MainLayout from "./MainLayout";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter> {/* 🟢 החלפנו פה */}
       <Routes>
         {/* עמוד ההתחברות מחוץ ל־Sidebar */}
         <Route element={<MainLayout />}>
@@ -32,10 +33,8 @@ export default function App() {
           <Route path="/view-stability/:id" element={<ViewStability />} />
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/samples" element={<SamplesDashboard />} />
-          
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
